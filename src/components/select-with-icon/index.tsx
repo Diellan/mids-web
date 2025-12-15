@@ -2,10 +2,7 @@ import MenuItem from "@mui/material/MenuItem";
 import Select, { SelectProps } from "@mui/material/Select";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
-
-function getImgUrl(name: string) {
-  return new URL(`${name}`, import.meta.url).href
-}
+import { getImgUrl } from "@/utils/getImgUrl";
 
 const SelectWithIcon = ({
   label,
@@ -14,8 +11,8 @@ const SelectWithIcon = ({
   ...props
 }: {
   label: string,
-  selected: IconEntity,
-  options: IconEntity[],
+  selected: { name: string, icon: string, key: string },
+  options: { name: string, icon: string, key: string }[],
 } & SelectProps) => {
   return (
     <Select
@@ -25,7 +22,7 @@ const SelectWithIcon = ({
         renderValue={() => (<div style={{ display: "flex", alignItems: "center" }}>
             {selected && (
               <img
-                src={getImgUrl(`../../assets/${selected.icon}`)}
+                src={getImgUrl(`/src/assets/${selected.icon}`)}
                 alt={selected.name}
                 loading="lazy"
                 width={16}
@@ -38,15 +35,15 @@ const SelectWithIcon = ({
         {...props}
     >
     {options.map(selectedOption => (
-        <MenuItem value={selectedOption.name} key={selectedOption.name}>
-        <ListItemIcon>
-            <img
-            src={getImgUrl(selectedOption.icon)}
-            alt={selectedOption.name}
-            loading="lazy"
-            />
-        </ListItemIcon>
-        <ListItemText primary={selectedOption.name} />
+        <MenuItem value={selectedOption.name} key={selectedOption.key}>
+          <ListItemIcon>
+              <img
+              src={getImgUrl(`/src/assets/${selectedOption.icon}`)}
+              alt={selectedOption.name}
+              loading="lazy"
+              />
+          </ListItemIcon>
+          <ListItemText primary={selectedOption.name} />
         </MenuItem>
     ))}
     </Select>

@@ -4,42 +4,55 @@ import ListItemText from "@mui/material/ListItemText";
 import InputLabel from "@mui/material/InputLabel";
 import FormControl from "@mui/material/FormControl";
 import SelectWithIcon from "../select-with-icon";
+import { IPowerset } from "@/core/IPowerset";
+import { IPower } from "@/core/IPower";
+import { useDomainStore } from "@/domainStore/useDomainStore";
 
 const PowerSelectorControl = ({
   label,
-  powerset,
+  powersetIndex,
   powersetOptions,
   setPowerset,
-  selectedPowers,
   togglePower,
   onPowerHover,
 }: {
   label: string,
-  powerset: PowerSet,
-  powersetOptions: PowerSet[],
+  powersetIndex: number,
+  powersetOptions: IPowerset[],
   setPowerset: (powerset: string) => void,
-  selectedPowers: ChosenPower[],
-  togglePower: (power: Power) => void,
-  onPowerHover: (power: Power) => void
+  togglePower: (power: IPower) => void,
+  onPowerHover: (power: IPower) => void
 }) => {
+  const powerset = useDomainStore(store => store.getPowersetByIndex(powersetIndex));
+  const powers = useDomainStore(store => store.getPowers());
+  const powerNames = new Set(powers.filter(p => p?.NIDPowerset === powerset?.nID).map(p => p?.NIDPower).filter(Boolean));
+  console.log('powerNames', powerset?.nID, powerset?.DisplayName, powerNames);
+  
+
   return (
     <FormControl size='small' margin='dense' fullWidth>
       <InputLabel>{label}</InputLabel>
       <SelectWithIcon
-        selected={powerset}
+        selected={{ name: powerset?.DisplayName ?? '', icon: `Powersets/${powerset?.ImageName ?? ''}`, key: powerset?.SetName ?? '' }}
         onChange={(e) => setPowerset(e.target.value as string)}
         label={label}
-        options={powersetOptions}
+        options={powersetOptions
+          .filter(powerset => powerset !== null)
+          .map(powerset => ({ 
+            name: powerset.DisplayName, 
+            icon: `Powersets/${powerset.ImageName}`, 
+            key: powerset.SetName 
+          }))}
       />
       <List dense>
-        {powerset.powers.map(power => (
+        {powerset?.Powers.filter(power => power !== null).map(power => (
           <ListItemButton
-            key={power.name}
-            selected={selectedPowers.some(selectedPower => selectedPower.power.id === power.id)}
-            onClick={() => togglePower(power)}
-            onMouseOver={() => onPowerHover(power)}
+            key={power?.PowerName ?? ''}
+            selected={power?.PowerIndex ? powerNames.has(power.PowerIndex) : false}
+            onClick={() => togglePower(power!)}
+            onMouseOver={() => onPowerHover(power!)}
           >
-            <ListItemText primary={power.name} />
+            <ListItemText primary={power?.DisplayName ?? ''} />
           </ListItemButton>
         ))}
       </List>

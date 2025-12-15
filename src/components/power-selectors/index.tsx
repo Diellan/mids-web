@@ -1,35 +1,37 @@
 import { PropsWithChildren } from "react";
 import PowerSelectorControl from "../power-selector-control";
 import Grid from "@mui/material/Grid";
+import { IPower } from "@/core/IPower";
+import { useDomainStoreInstance } from "@/domainStore/domainStoreContext";
+import { useDomainStore } from "@/domainStore/useDomainStore";
+import { PowerEntry } from "@/core/PowerEntry";
 
 const PowerSelectors = ({
-  character,
-  togglePower,
-  primaryPowerSetOptions,
-  secondaryPowerSetOptions,
-  powerPoolOptions,
-  epicPoolOptions,
-  onPowerHover,
   children
-}: PropsWithChildren<{
-  character: Character,
-  togglePower: (power: Power) => void,
-  primaryPowerSetOptions: PowerSet[],
-  secondaryPowerSetOptions: PowerSet[],
-  powerPoolOptions: PowerSet[],
-  epicPoolOptions: PowerSet[],
-  onPowerHover: (power: Power) => void
-}>) => {
+}: PropsWithChildren) => {
+  const domainStore = useDomainStoreInstance();
+  const primaryPowerSetOptions = useDomainStore(store => store.getPrimaryPowerSetOptions());
+  const secondaryPowerSetOptions = useDomainStore(store => store.getSecondaryPowerSetOptions());
+  const powerPoolOptions = useDomainStore(store => store.getPowerPoolOptions());
+  const epicPoolOptions = useDomainStore(store => store.getEpicPoolOptions());
+
+  const togglePower = (power: IPower) => {
+    domainStore.togglePower(power);
+  };
+  
+  const onPowerHover = (power: IPower) => {
+    domainStore.setHighlightedPower(new PowerEntry(power));
+  };
+  
   return (
     <Grid container>
       <Grid size={8} container>
         <Grid size={6}>
           <PowerSelectorControl
             label='Primary Power Set'
-            powerset={character.primaryPowerSet}
+            powersetIndex={0}
             powersetOptions={primaryPowerSetOptions}
             setPowerset={(powerset) => {}}
-            selectedPowers={character.powers}
             togglePower={togglePower}
             onPowerHover={onPowerHover}
           />
@@ -37,10 +39,9 @@ const PowerSelectors = ({
         <Grid size={6}>
           <PowerSelectorControl
             label='Secondary Power Set'
-            powerset={character.secondaryPowerSet}
+            powersetIndex={1}
             powersetOptions={secondaryPowerSetOptions}
             setPowerset={(powerset) => {}}
-            selectedPowers={character.powers}
             togglePower={togglePower}
             onPowerHover={onPowerHover}
           />
@@ -52,46 +53,41 @@ const PowerSelectors = ({
       <Grid size={4}>
         <PowerSelectorControl
           label='Pool 1'
-          powerset={character.powerPool1}
+          powersetIndex={3}
           powersetOptions={powerPoolOptions}
           setPowerset={(powerset) => {}}
-          selectedPowers={character.powers}
           togglePower={togglePower}
           onPowerHover={onPowerHover}
         />
         <PowerSelectorControl
           label='Pool 2'
-          powerset={character.powerPool2}
+          powersetIndex={4}
           powersetOptions={powerPoolOptions}
           setPowerset={(powerset) => {}}
-          selectedPowers={character.powers}
           togglePower={togglePower}
           onPowerHover={onPowerHover}
         />
         <PowerSelectorControl
           label='Pool 3'
-          powerset={character.powerPool3}
+          powersetIndex={5}
           powersetOptions={powerPoolOptions}
           setPowerset={(powerset) => {}}
-          selectedPowers={character.powers}
           togglePower={togglePower}
           onPowerHover={onPowerHover}
         />
         <PowerSelectorControl
           label='Pool 4'
-          powerset={character.powerPool4}
+          powersetIndex={6}
           powersetOptions={powerPoolOptions}
           setPowerset={(powerset) => {}}
-          selectedPowers={character.powers}
           togglePower={togglePower}
           onPowerHover={onPowerHover}
         />
         <PowerSelectorControl
           label='Ancillary/Epic Pool'
-          powerset={character.epicPool}
+          powersetIndex={7}
           powersetOptions={epicPoolOptions}
           setPowerset={(powerset) => {}}
-          selectedPowers={character.powers}
           togglePower={togglePower}
           onPowerHover={onPowerHover}
         />

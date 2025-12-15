@@ -1,10 +1,12 @@
-const DataViewer = ({ power }: { power?: Power }) => {
-  if (!power) return;
+import { useDomainStore } from "@/domainStore/useDomainStore";
+
+const DataViewer = () => {
+  const highlightedPower = useDomainStore(store => store.getHighlightedPower());
 
   return (
     <div>
       <h1>Data Viewer</h1>
-      <span>{power.name}</span>
+      <span>{highlightedPower?.Power?.DisplayName}</span>
     </div>
   );
 };

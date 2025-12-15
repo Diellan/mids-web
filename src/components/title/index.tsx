@@ -1,6 +1,9 @@
-const Title = ({ character }: { character: Character }) => {
+import { useDomainStore } from "@/domainStore/useDomainStore";
+
+const Title = () => {
+  const name = useDomainStore(store => store.getCharacterName());
   return <div>
-    <h1>{character.name}</h1>
+    <h1>{name ?? 'Untitled'}</h1>
   </div>;
 };
 

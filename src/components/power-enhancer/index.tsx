@@ -1,11 +1,22 @@
 import List from "@mui/material/List";
-import Card from "@mui/material/Card";
+import Card, { CardProps } from "@mui/material/Card";
 import ListItem, { ListItemProps } from "@mui/material/ListItem";
 import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material";
+import { PowerEntry } from "@/core/PowerEntry";
+import { useDomainStoreInstance } from "@/domainStore/domainStoreContext";
+import PowerSlotEnhancer from "../power-slot-enhancer";
+import { eEnhGrade } from "@/core/Enums";
 
-const PowerSlot = styled(Card)(({ theme }) => ({
-  background: 'linear-gradient(to bottom, #417cf5 0%, #203da2 2%, #18295a 4%, #203da3 50%, #103a7a 96%, #3c70e8 98%, #1c3698 100%)',
+interface PowerSlotProps extends CardProps {
+  highlighted?: boolean;
+}
+
+const PowerSlot = styled(Card, { shouldForwardProp: (prop) => prop !== 'highlighted' })<PowerSlotProps>(({ theme, highlighted }) => ({
+  background: highlighted ?
+    'linear-gradient(to bottom, #417cf5 0%, #203da2 2%, #18295a 4%, #203da3 50%, #103a7a 96%, #3c70e8 98%, #1c3698 100%)' :
+    'linear-gradient(to bottom, #414747 0%, #202020 2%, #959595 4%, #dadada 50%, #7a7a7a 96%, #3c3c3c 98%, #1c1c1c 100%)',
+  border: highlighted ? `2px solid ${theme.palette.primary.main}` : 'none',
   borderRadius: 20,
   margin: theme.spacing(1),
   marginBottom: theme.spacing(8),
@@ -14,7 +25,8 @@ const PowerSlot = styled(Card)(({ theme }) => ({
   paddingRight: theme.spacing(1),
   paddingBottom: theme.spacing(1),
   position: 'relative',
-  overflow: 'visible'
+  overflow: 'visible',
+  height: 40
 }));
 
 const Slots = styled(List)(({ theme }) => ({
@@ -39,33 +51,36 @@ const Slot = styled(ListItem)<SlotProps>(({ theme, icon }) => ({
   position: 'relative'
 }));
 
+const PowerLevel = styled(Typography)(({ theme }) => ({
+  textShadow: '-1px 0 1px #000, 1px 0 1px #000, 0 -1px 1px #000, 0 1px 1px #000',
+  fontSize: '0.8rem',
+  position: 'absolute',
+  top: -10,
+  fontStyle: 'italic',
+  left: 0
+}));
+
 const PowerTitle = styled(Typography)(({ theme }) => ({
   textShadow: '-1px 0 1px #000, 1px 0 1px #000, 0 -1px 1px #000, 0 1px 1px #000',
   fontWeight: 'bold',
   fontStyle: 'italic'
 }));
 
-const SlotLevel = styled(Typography)(({ theme }) => ({
-  textShadow: '-1px 0 1px #000, 1px 0 1px #000, 0 -1px 1px #000, 0 1px 1px #000',
-  fontSize: '0.8rem',
-  position: 'absolute',
-  bottom: -5,
-  width: '100%',
-  textAlign: 'center',
-  fontStyle: 'italic',
-  left: 0
-}));
+const PowerEnhancer = ({ chosenPower, ...prop }: { chosenPower: PowerEntry }) => {
+  const domainStore = useDomainStoreInstance();
 
-const PowerEnhancer = ({ chosenPower, onPowerHover, ...prop }: { chosenPower: ChosenPower, onPowerHover: (power: ChosenPower) => void }) => {
+  const setEnhancement = (enhancement: number, grade: eEnhGrade, slotIndex: number) => {
+    domainStore.pickEnhancement(enhancement, grade, chosenPower.IDXPower, slotIndex);
+  };
+
   return (
-    <PowerSlot {...prop} onMouseOver={() => onPowerHover(chosenPower)}>
+    <PowerSlot highlighted={chosenPower.NIDPower > -1} {...prop} onMouseOver={() => domainStore.setHighlightedPower(chosenPower)}>
+      {chosenPower.Level > -1 && <PowerLevel>{chosenPower.Level+1}</PowerLevel>}
       <PowerTitle
         variant='button'
-      >{chosenPower.power.name}</PowerTitle>
-      {chosenPower.slots.length > 0 && <Slots>
-        {chosenPower.slots.map((slot, index) => (<Slot icon={slot.enhancement?.icon} key={index}>
-            <SlotLevel>{slot.level}</SlotLevel>
-        </Slot>))}
+      >{chosenPower.Power?.DisplayName}</PowerTitle>
+      {chosenPower.Power && chosenPower.Slots.length > 0 && <Slots>
+        {chosenPower.Slots.map((slot, index) => (<PowerSlotEnhancer slotEntry={slot} key={index} power={chosenPower.Power!} onSetEnhancement={(enhancement, grade) => setEnhancement(enhancement, grade, index)} />))}
       </Slots>}
     </PowerSlot>
   )
