@@ -34,6 +34,9 @@ export class DomainStore {
   private lastArchetypeClassName: string | null = null;
   private lastPoolGroup: string | null = null;
   private highlightedPower: PowerEntry | null = null;
+  private cachedBasePower: IPower | null = null;
+  private cachedEnhancedPower: IPower | null = null;
+  private lastHighlightedPowerId: number = -1;
 
   constructor(database?: IDatabase, toon?: Toon) {
     if (!database) {
@@ -59,6 +62,9 @@ export class DomainStore {
 
   notify() {
     this.toon.GenerateBuffedPowerArray();
+    // Clear enhanced power cache when buffed powers are regenerated
+    // Base power cache is only cleared when highlighted power changes
+    this.cachedEnhancedPower = null;
     for (const l of this.listeners) l();
   }
 
@@ -113,6 +119,28 @@ export class DomainStore {
     // Index refers to the toon's Powersets array (0=Primary, 1=Secondary, 3-6=Pools, 7=Epic)
     // not the database's Powersets array
     return this.toon.Powersets[index] ?? null;
+  }
+
+  setPowerset(powersetName: string, index: number) {
+    if (this.toon.Powersets[index]?.SetName === powersetName) {
+      return;
+    }
+
+    const powerset = this.database.Powersets.find(p => p.SetName === powersetName);
+    if (!powerset) {
+      throw new Error('Powerset not found');
+    }
+
+    if (index < 2 && this.toon.Powersets[index]) {
+      this.toon.SwitchSets(powerset, this.toon.Powersets[index]);
+    }
+
+    this.toon.Powersets[index] = powerset;
+    this.toon.Validate();
+    this.cachedPowers = null;
+    this.cachedPowersLength = -1;
+    this.originalPowersRef = null;
+    this.notify();
   }
 
   getPowers(): (PowerEntry | null)[] {
@@ -226,8 +254,51 @@ export class DomainStore {
   }
 
   setHighlightedPower(power: PowerEntry) {
+    // Clear cache if power changed
+    if (this.highlightedPower?.NIDPower !== power.NIDPower) {
+      this.cachedBasePower = null;
+      this.cachedEnhancedPower = null;
+    }
     this.highlightedPower = power;
+    this.lastHighlightedPowerId = power.NIDPower;
     this.notify();
+  }
+
+  getBasePower(): IPower | null {
+    const power = this.highlightedPower;
+    if (!power) {
+      this.cachedBasePower = null;
+      this.lastHighlightedPowerId = -1;
+      return null;
+    }
+    
+    // Cache based on highlighted power ID
+    if (this.cachedBasePower && this.lastHighlightedPowerId === power.NIDPower) {
+      return this.cachedBasePower;
+    }
+    
+    const powerIndex = this.toon.CurrentBuild?.Powers.findIndex(e => e.Power === power.Power) ?? -1;
+    this.cachedBasePower = this.toon.GetBasePower(powerIndex, power.NIDPower);
+    this.lastHighlightedPowerId = power.NIDPower;
+    return this.cachedBasePower;
+  }
+
+  getEnhancedPower(): IPower | null {
+    const power = this.highlightedPower;
+    if (!power) {
+      this.cachedEnhancedPower = null;
+      this.lastHighlightedPowerId = -1;
+      return null;
+    }
+    
+    // Cache based on highlighted power ID
+    if (this.cachedEnhancedPower && this.lastHighlightedPowerId === power.NIDPower) {
+      return this.cachedEnhancedPower;
+    }
+    
+    this.cachedEnhancedPower = this.toon.GetEnhancedPower(power.Power);
+    this.lastHighlightedPowerId = power.NIDPower;
+    return this.cachedEnhancedPower;
   }
 
   getSpecialTypes(): TypeGrade[] {
@@ -236,6 +307,19 @@ export class DomainStore {
 
   getEnhancement(enhancementId: number): IEnhancement {
     return this.database.Enhancements[enhancementId];
+  }
+
+  getEnhancementImagePath(enhancementId: number): string {
+    const enhancement = this.database.Enhancements[enhancementId];
+    if (!enhancement) {
+      return '/src/assets/Sets/None.png';
+    }
+
+    if (enhancement.Image.indexOf('/') !== -1) {
+      return `/src/assets/${enhancement.Image}`;
+    }
+
+    return `/src/assets/Enhancements/${enhancement.Image}`;
   }
 
   getSetType(setTypeId: number): TypeGrade {
@@ -268,6 +352,15 @@ export class DomainStore {
     i9Slot.IOLevel = 0;
     power.Slots[slotIndex] = new SlotEntry();
     power.Slots[slotIndex].Enhancement = i9Slot;
+    this.notify();
+  }
+
+  canPlaceSlot(): boolean {
+    return this.toon.CanPlaceSlot;
+  }
+
+  addSlot(powerIndex: number) {    
+    this.toon.BuildSlot(powerIndex);
     this.notify();
   }
 }

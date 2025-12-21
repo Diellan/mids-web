@@ -7,28 +7,29 @@ import SelectWithIcon from "../select-with-icon";
 import { IPowerset } from "@/core/IPowerset";
 import { IPower } from "@/core/IPower";
 import { useDomainStore } from "@/domainStore/useDomainStore";
+import ListItem from "@mui/material/ListItem";
+import { useDomainStoreInstance } from "@/domainStore/domainStoreContext";
 
 const PowerSelectorControl = ({
   label,
   powersetIndex,
   powersetOptions,
-  setPowerset,
   togglePower,
   onPowerHover,
 }: {
   label: string,
   powersetIndex: number,
   powersetOptions: IPowerset[],
-  setPowerset: (powerset: string) => void,
   togglePower: (power: IPower) => void,
   onPowerHover: (power: IPower) => void
 }) => {
   const powerset = useDomainStore(store => store.getPowersetByIndex(powersetIndex));
   const powers = useDomainStore(store => store.getPowers());
-  const powerNames = new Set(powers.filter(p => p?.NIDPowerset === powerset?.nID).map(p => p?.NIDPower).filter(Boolean));
-  console.log('powerNames', powerset?.nID, powerset?.DisplayName, powerNames);
-  
-
+  const powerNames = new Set(powers.filter(p => p?.NIDPowerset === powerset?.nID).map(p => p?.NIDPower).filter(Boolean));  
+  const domainStore = useDomainStoreInstance();
+  const setPowerset = (powerset: string) => {
+    domainStore.setPowerset(powerset, powersetIndex);
+  };  
   return (
     <FormControl size='small' margin='dense' fullWidth>
       <InputLabel>{label}</InputLabel>
@@ -46,14 +47,16 @@ const PowerSelectorControl = ({
       />
       <List dense>
         {powerset?.Powers.filter(power => power !== null).map(power => (
-          <ListItemButton
-            key={power?.PowerName ?? ''}
-            selected={power?.PowerIndex ? powerNames.has(power.PowerIndex) : false}
-            onClick={() => togglePower(power!)}
-            onMouseOver={() => onPowerHover(power!)}
-          >
-            <ListItemText primary={power?.DisplayName ?? ''} />
-          </ListItemButton>
+          <ListItem key={power.PowerName} sx={{ padding: 0 }}>
+            <ListItemButton
+              selected={powerNames.has(power.PowerIndex)}
+              onClick={() => togglePower(power!)}
+              onMouseOver={() => onPowerHover(power!)}
+              sx={{ padding: '0 8px' }}
+            >
+              <ListItemText primary={power.DisplayName} />
+            </ListItemButton>
+          </ListItem>
         ))}
       </List>
     </FormControl>

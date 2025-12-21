@@ -24,6 +24,7 @@
     "@emotion/styled": "^11.14.1",
     "@fontsource/roboto": "^5.2.9",
     "@mui/icons-material": "^7.3.6",
+    "@mui/lab": "7.0.1-beta.20",
     "@mui/material": "^7.3.6",
     "csharp-binary-stream": "^2.0.0",
     "electron-updater": "^6.3.9"

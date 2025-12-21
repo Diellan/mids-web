@@ -10,13 +10,13 @@ import { getImgUrl } from "@/utils/getImgUrl";
 import { useDomainStore } from "@/domainStore/useDomainStore";
 
 const Slot = styled(ListItem)(({ theme }) => ({
-  backgroundColor: 'black',
   borderRadius: 20,
   width: 30,
   height: 30,
-  margin: theme.spacing(1),
-  padding: theme.spacing(1),
-  position: 'relative'
+  margin: theme.spacing(0.5),
+  padding: 0,
+  position: 'relative',
+  cursor: 'pointer'
 }));
 
 const SlotLevel = styled(Typography)(({ theme }) => ({
@@ -60,13 +60,13 @@ const PowerSlotEnhancer = ({
     }
   };
 
-  const imageUrl = useDomainStore(store => store.getEnhancement(slotEntry.Enhancement?.Enh)?.Image);
+  const imageUrl = useDomainStore(store => store.getEnhancementImagePath(slotEntry.Enhancement?.Enh));
 
   return (
     <>
       <Slot {...prop} onClick={handleOpen}>
-        {slotEntry.Enhancement?.Enh > -1 && (<img src={getImgUrl(`/src/assets/${imageUrl}`)} alt={slotEntry.Enhancement?.Enh.toString()} />)}
-        <SlotEnhancementLevel>{slotEntry.Enhancement?.RelativeLevel}</SlotEnhancementLevel>
+        <img src={getImgUrl(imageUrl)} alt={slotEntry.Enhancement?.Enh.toString()} />
+        <SlotEnhancementLevel>{slotEntry.Enhancement?.GetEnhancementLevelString()}</SlotEnhancementLevel>
         <SlotLevel>{slotEntry.Level+1}</SlotLevel>
       </Slot>
       <EnhancementPicker open={open} onClose={handleClose} power={power} />

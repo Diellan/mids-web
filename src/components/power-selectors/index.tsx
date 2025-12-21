@@ -5,6 +5,7 @@ import { IPower } from "@/core/IPower";
 import { useDomainStoreInstance } from "@/domainStore/domainStoreContext";
 import { useDomainStore } from "@/domainStore/useDomainStore";
 import { PowerEntry } from "@/core/PowerEntry";
+import { Box, Stack } from "@mui/material";
 
 const PowerSelectors = ({
   children
@@ -24,38 +25,33 @@ const PowerSelectors = ({
   };
   
   return (
-    <Grid container>
-      <Grid size={8} container>
-        <Grid size={6}>
+    <Stack direction={'row'} spacing={2} alignItems={'stretch'}>
+      <Stack direction={'column'} flex={1}>
+        <Stack direction={'row'} spacing={2}>
           <PowerSelectorControl
             label='Primary Power Set'
             powersetIndex={0}
             powersetOptions={primaryPowerSetOptions}
-            setPowerset={(powerset) => {}}
             togglePower={togglePower}
             onPowerHover={onPowerHover}
           />
-        </Grid>
-        <Grid size={6}>
           <PowerSelectorControl
             label='Secondary Power Set'
             powersetIndex={1}
             powersetOptions={secondaryPowerSetOptions}
-            setPowerset={(powerset) => {}}
             togglePower={togglePower}
             onPowerHover={onPowerHover}
           />
-        </Grid>
-        <Grid size={12}>
+        </Stack>
+        {!!children && <Box>
           {children}
-        </Grid>
-      </Grid>
-      <Grid size={4}>
+        </Box>}
+      </Stack>
+      <Stack direction={'column'} flex={1} spacing={2}>
         <PowerSelectorControl
           label='Pool 1'
           powersetIndex={3}
           powersetOptions={powerPoolOptions}
-          setPowerset={(powerset) => {}}
           togglePower={togglePower}
           onPowerHover={onPowerHover}
         />
@@ -63,7 +59,6 @@ const PowerSelectors = ({
           label='Pool 2'
           powersetIndex={4}
           powersetOptions={powerPoolOptions}
-          setPowerset={(powerset) => {}}
           togglePower={togglePower}
           onPowerHover={onPowerHover}
         />
@@ -71,7 +66,6 @@ const PowerSelectors = ({
           label='Pool 3'
           powersetIndex={5}
           powersetOptions={powerPoolOptions}
-          setPowerset={(powerset) => {}}
           togglePower={togglePower}
           onPowerHover={onPowerHover}
         />
@@ -79,7 +73,6 @@ const PowerSelectors = ({
           label='Pool 4'
           powersetIndex={6}
           powersetOptions={powerPoolOptions}
-          setPowerset={(powerset) => {}}
           togglePower={togglePower}
           onPowerHover={onPowerHover}
         />
@@ -87,12 +80,11 @@ const PowerSelectors = ({
           label='Ancillary/Epic Pool'
           powersetIndex={7}
           powersetOptions={epicPoolOptions}
-          setPowerset={(powerset) => {}}
           togglePower={togglePower}
           onPowerHover={onPowerHover}
         />
-      </Grid>
-    </Grid>
+      </Stack>
+    </Stack>
   );
 };
 

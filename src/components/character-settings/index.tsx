@@ -14,7 +14,7 @@ const CharacterSettings = () => {
   const store = useDomainStoreInstance();
 
   const handleArchetypeChange = (value: string) => {
-    const found = archetypeOptions.find(at => at.DisplayName === value);
+    const found = archetypeOptions.find(at => at.ClassName === value);
     if (found) {
       store.setCharacterArchetype(found);
     }
@@ -29,10 +29,10 @@ const CharacterSettings = () => {
 
   return (
     <div>
-      <FormControl fullWidth margin='normal' size='small'>
+      <FormControl fullWidth margin='dense' size='small'>
         <TextField variant="outlined" label="Name" value={name} onChange={(e) => store.setCharacterName(e.target.value)} />
       </FormControl>
-      <FormControl fullWidth margin='normal' size='small'>
+      <FormControl fullWidth margin='dense' size='small'>
         <InputLabel>Archetype</InputLabel>
         <SelectWithIcon
           selected={{ name: archetype?.DisplayName ?? 'test', icon: `Archetypes/${archetype?.ClassName ?? ''}.png`, key: archetype?.ClassName ?? '' }}
@@ -41,7 +41,7 @@ const CharacterSettings = () => {
           options={archetypeOptions.map(archetype => ({ name: archetype.DisplayName, icon: `Archetypes/${archetype.ClassName}.png`, key: archetype.ClassName }))}
         />
       </FormControl>
-      <FormControl fullWidth margin='normal' size='small'>
+      <FormControl fullWidth margin='dense' size='small'>
         <InputLabel>Origin</InputLabel>
         <SelectWithIcon
           selected={{ name: origin?.Name ?? '', icon: `Origins/${origin?.Name ?? ''}.png`, key: origin?.Name ?? '' }}
