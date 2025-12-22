@@ -5,30 +5,28 @@
 // - DataClassifier (for BuildManager)
 // - MidsCharacterFileFormat.MxDReadSaveData (for BuildManager)
 
-import type { Character } from '../Base/Data_Classes/Character';
-import type { PowerEntry } from '../PowerEntry';
-import type { I9Slot } from '../I9Slot';
+import { Character } from '../Base/Data_Classes/Character';
+import { PowerEntry } from '../PowerEntry';
+import { I9Slot } from '../I9Slot';
 import { MidsContext } from '../Base/Master_Classes/MidsContext';
 import { DatabaseAPI } from '../DatabaseAPI';
-import { Enums } from '../Enums';
 import type { MetaData, Version } from './DataModels/MetaData';
 import type { PowerData } from './DataModels/PowerData';
 import type { SlotData } from './DataModels/SlotData';
 import type { EnhancementData } from './DataModels/EnhancementData';
-import type { SubPowerData } from './DataModels/SubPowerData';
 import { MetaData as MetaDataClass } from './DataModels/MetaData';
-import { PowerData as PowerDataClass } from './DataModels/PowerData';
+import { EmptyPowerData, PowerData as PowerDataClass } from './DataModels/PowerData';
 import { SlotData as SlotDataClass } from './DataModels/SlotData';
 import { EnhancementData as EnhancementDataClass } from './DataModels/EnhancementData';
-import { SubPowerData as SubPowerDataClass } from './DataModels/SubPowerData';
+import { EmptySubPowerData, SubPowerData, SubPowerData as SubPowerDataClass } from './DataModels/SubPowerData';
 import { SlotEntry } from '../SlotEntry';
 import { PowerSubEntry } from '../PowerSubEntry';
-import { IBuildNotifier, BuildNotifier } from './BuildNotifier';
 import { Compression } from '../Utils/Compression';
 import { ModernZlib } from '../Utils/ModernZlib';
+import { Alignment, eEnhGrade, eEnhRelative, eGridType, eType } from '../Enums';
+import { Toon } from '../Toon';
 
 export class CharacterBuildData {
-    private readonly _notifier: IBuildNotifier = new BuildNotifier();
     private static _instance: CharacterBuildData | null = null;
     private static readonly InstanceLock: object = {};
 
@@ -37,6 +35,7 @@ export class CharacterBuildData {
         synchronized(CharacterBuildData.InstanceLock, () => {
             CharacterBuildData._instance = new CharacterBuildData();
         });
+        if (CharacterBuildData._instance === null) throw new Error('CharacterBuildData._instance is null');
         return CharacterBuildData._instance;
     }
 
@@ -83,12 +82,12 @@ export class CharacterBuildData {
                 revision: DatabaseAPI.Database.Version.revision || 0
             };
 
-            this.BuiltWith = new MetaDataClass(
-                MidsContext.AppName,
-                appVersion,
-                DatabaseAPI.DatabaseName,
-                dbVersion
-            );
+            this.BuiltWith = {
+                App: MidsContext.AppName,
+                Version: appVersion,
+                Database: DatabaseAPI.DatabaseName,
+                DatabaseVersion: dbVersion
+            };
             this.Class = characterData.Archetype.ClassName;
             this.Origin = characterData.Archetype.Origin[characterData.Origin];
             this.Alignment = characterData.Alignment.toString();
@@ -106,46 +105,51 @@ export class CharacterBuildData {
 
             for (const powerEntry of characterData.CurrentBuild.Powers) {
                 if (powerEntry === null) continue;
+                if (powerEntry.NIDPower < 0 || powerEntry.Power === null) {
+                    this.PowerEntries.push(EmptyPowerData);
+                    continue;
+                }
 
-                const powerData = new PowerDataClass();
-                if (powerEntry.NIDPower < 0) {
-                    this.PowerEntries.push(powerData);
-                } else {
-                    const power = powerEntry.Power;
-                    if (power === null) continue;
-                    powerData.PowerName = power.FullName;
-                    powerData.Level = powerEntry.Level + 1;
-                    powerData.StatInclude = powerEntry.StatInclude;
-                    powerData.ProcInclude = powerEntry.ProcInclude;
-                    powerData.VariableValue = powerEntry.VariableValue;
-                    powerData.InherentSlotsUsed = powerEntry.InherentSlotsUsed;
+                const power = powerEntry.Power;
+                const powerData: PowerData = {
+                    PowerName: power.FullName,
+                    Level: powerEntry.Level + 1,
+                    StatInclude: powerEntry.StatInclude,
+                    ProcInclude: powerEntry.ProcInclude,
+                    VariableValue: powerEntry.VariableValue,
+                    InherentSlotsUsed: powerEntry.InherentSlotsUsed,
+                    SubPowerEntries: [],
+                    SlotEntries: [],
+                };
 
-                    this.PowerEntries.push(powerData);
+                this.PowerEntries.push(powerData);
 
-                    for (const subPowerEntry of powerEntry.SubPowers) {
-                        const subPowerData = new SubPowerDataClass();
-                        if (subPowerEntry.nIDPower > 1) {
-                            const subPower = DatabaseAPI.Database.Power[subPowerEntry.nIDPower];
-                            subPowerData.PowerName = subPower.FullName;
-                        }
-
-                        subPowerData.StatInclude = subPowerEntry.StatInclude;
-                        const lastIndex = this.PowerEntries.length - 1;
-                        if (this.PowerEntries[lastIndex] !== null) {
-                            this.PowerEntries[lastIndex]!.SubPowerEntries.push(subPowerData);
-                        }
+                for (const subPowerEntry of powerEntry.SubPowers) {
+                    const subPowerData: SubPowerData = EmptySubPowerData;
+                    if (subPowerEntry.nIDPower > 1) {
+                        const subPower = DatabaseAPI.Database.Power[subPowerEntry.nIDPower];
+                        subPowerData.PowerName = subPower.FullName;
                     }
 
-                    for (const slot of powerEntry.Slots) {
-                        const slotData = new SlotDataClass();
-                        slotData.Level = slot.Level + 1;
-                        slotData.IsInherent = slot.IsInherent;
-                        CharacterBuildData.WriteSlotData(slotData, slot.Enhancement);
-                        CharacterBuildData.WriteAltSlotData(slotData, slot.FlippedEnhancement);
-                        const lastIndex = this.PowerEntries.length - 1;
-                        if (this.PowerEntries[lastIndex] !== null) {
-                            this.PowerEntries[lastIndex]!.SlotEntries.push(slotData);
-                        }
+                    subPowerData.StatInclude = subPowerEntry.StatInclude;
+                    const lastIndex = this.PowerEntries.length - 1;
+                    if (this.PowerEntries[lastIndex] !== null) {
+                        this.PowerEntries[lastIndex]!.SubPowerEntries.push(subPowerData);
+                    }
+                }
+
+                for (const slot of powerEntry.Slots) {
+                    const slotData: SlotData = {
+                        Level: slot.Level + 1,
+                        IsInherent: slot.IsInherent,
+                        Enhancement: null,
+                        FlippedEnhancement: null,
+                    };
+                    CharacterBuildData.WriteSlotData(slotData, slot.Enhancement);
+                    CharacterBuildData.WriteAltSlotData(slotData, slot.FlippedEnhancement);
+                    const lastIndex = this.PowerEntries.length - 1;
+                    if (this.PowerEntries[lastIndex] !== null) {
+                        this.PowerEntries[lastIndex]!.SlotEntries.push(slotData);
                     }
                 }
             }
@@ -156,17 +160,21 @@ export class CharacterBuildData {
         if (slot.Enh < 0) {
             slotData.Enhancement = null;
         } else {
-            slotData.Enhancement = new EnhancementDataClass();
-            slotData.Enhancement.Uid = DatabaseAPI.Database.Enhancements[slot.Enh].UID;
-            slotData.Enhancement.Obtained = slot.Obtained;
+            slotData.Enhancement = {
+                Uid: DatabaseAPI.Database.Enhancements[slot.Enh].UID,
+                Grade: eEnhGrade[slot.Grade],
+                IoLevel: slot.IOLevel,
+                RelativeLevel: eEnhRelative[slot.RelativeLevel],
+                Obtained: slot.Obtained,
+            };
 
             const enhType = DatabaseAPI.Database.Enhancements[slot.Enh].TypeID;
-            if (enhType === Enums.eType.Normal || enhType === Enums.eType.SpecialO) {
-                slotData.Enhancement.RelativeLevel = Enums.eEnhRelative[slot.RelativeLevel];
-                slotData.Enhancement.Grade = Enums.eEnhGrade[slot.Grade];
-            } else if (enhType === Enums.eType.InventO || enhType === Enums.eType.SetO) {
+            if (enhType === eType.Normal || enhType === eType.SpecialO) {
+                slotData.Enhancement.RelativeLevel = eEnhRelative[slot.RelativeLevel];
+                slotData.Enhancement.Grade = eEnhGrade[slot.Grade];
+            } else if (enhType === eType.InventO || enhType === eType.SetO) {
                 slotData.Enhancement.IoLevel = slot.IOLevel;
-                slotData.Enhancement.RelativeLevel = Enums.eEnhRelative[slot.RelativeLevel];
+                slotData.Enhancement.RelativeLevel = eEnhRelative[slot.RelativeLevel];
             }
         }
     }
@@ -175,32 +183,36 @@ export class CharacterBuildData {
         if (slot.Enh < 0) {
             slotData.FlippedEnhancement = null;
         } else {
-            slotData.FlippedEnhancement = new EnhancementDataClass();
-            slotData.FlippedEnhancement.Uid = DatabaseAPI.Database.Enhancements[slot.Enh].UID;
-            slotData.FlippedEnhancement.Obtained = slot.Obtained;
+            slotData.FlippedEnhancement = {
+                Uid: DatabaseAPI.Database.Enhancements[slot.Enh].UID,
+                Grade: eEnhGrade[slot.Grade],
+                IoLevel: slot.IOLevel,
+                RelativeLevel: eEnhRelative[slot.RelativeLevel],
+                Obtained: slot.Obtained,
+            };
 
             const enhType = DatabaseAPI.Database.Enhancements[slot.Enh].TypeID;
-            if (enhType === Enums.eType.Normal || enhType === Enums.eType.SpecialO) {
-                slotData.FlippedEnhancement.RelativeLevel = Enums.eEnhRelative[slot.RelativeLevel];
-                slotData.FlippedEnhancement.Grade = Enums.eEnhGrade[slot.Grade];
-            } else if (enhType === Enums.eType.InventO || enhType === Enums.eType.SetO) {
+            if (enhType === eType.Normal || enhType === eType.SpecialO) {
+                slotData.FlippedEnhancement.RelativeLevel = eEnhRelative[slot.RelativeLevel];
+                slotData.FlippedEnhancement.Grade = eEnhGrade[slot.Grade];
+            } else if (enhType === eType.InventO || enhType === eType.SetO) {
                 slotData.FlippedEnhancement.IoLevel = slot.IOLevel;
-                slotData.FlippedEnhancement.RelativeLevel = Enums.eEnhRelative[slot.RelativeLevel];
+                slotData.FlippedEnhancement.RelativeLevel = eEnhRelative[slot.RelativeLevel];
             }
         }
     }
 
-    private static SortGridPowers(powerList: PowerEntry[], iType: Enums.eGridType): PowerEntry[] {
+    private static SortGridPowers(powerList: PowerEntry[], iType: eGridType): PowerEntry[] {
         const tList = powerList.filter(x => x.Power !== null && x.Power.InherentType === iType);
         const tempList: (PowerEntry | null)[] = new Array(tList.length).fill(null);
         for (let eIndex = 0; eIndex < tList.length; eIndex++) {
             const power = tList[eIndex];
             if (power.Power !== null) {
                 switch (power.Power.InherentType) {
-                    case Enums.eGridType.Class:
+                    case eGridType.Class:
                         tempList[eIndex] = power;
                         break;
-                    case Enums.eGridType.Inherent:
+                    case eGridType.Inherent:
                         switch (power.Power.PowerName) {
                             case 'Brawl':
                                 tempList[0] = power;
@@ -225,26 +237,26 @@ export class CharacterBuildData {
                                 break;
                         }
                         break;
-                    case Enums.eGridType.Powerset:
+                    case eGridType.Powerset:
                         tempList[eIndex] = power;
                         break;
-                    case Enums.eGridType.Power:
+                    case eGridType.Power:
                         tempList[eIndex] = power;
                         break;
-                    case Enums.eGridType.Prestige:
+                    case eGridType.Prestige:
                         tempList[eIndex] = power;
                         break;
-                    case Enums.eGridType.Incarnate:
+                    case eGridType.Incarnate:
                         tempList[eIndex] = power;
                         break;
-                    case Enums.eGridType.Accolade:
+                    case eGridType.Accolade:
                         power.Level = 49;
                         tempList[eIndex] = power;
                         break;
-                    case Enums.eGridType.Pet:
+                    case eGridType.Pet:
                         tempList[eIndex] = power;
                         break;
-                    case Enums.eGridType.Temp:
+                    case eGridType.Temp:
                         tempList[eIndex] = power;
                         break;
                 }
@@ -254,17 +266,18 @@ export class CharacterBuildData {
         return tempList.filter((p): p is PowerEntry => p !== null);
     }
 
-    LoadBuild(): boolean {
+    LoadBuild(): Toon {
         CharacterBuildData.InherentPowers = [];
 
         const atNiD = DatabaseAPI.NidFromUidClass(this.Class);
         const atOrigin = DatabaseAPI.NidFromUidOrigin(this.Origin, atNiD);
-        MidsContext.Character!.Reset(DatabaseAPI.Database.Classes[atNiD], atOrigin);
-        MidsContext.Character!.Alignment = Enums.eAlignment[this.Alignment as keyof typeof Enums.eAlignment] || Enums.eAlignment.Hero;
-        MidsContext.Character!.Name = this.Name;
-        MidsContext.Character!.Comment = this.Comment ?? '';
-        MidsContext.Character!.LoadPowerSetsByName(this.PowerSets);
-        MidsContext.Character!.CurrentBuild!.LastPower = this.LastPower;
+        const character = new Toon();
+        character.Reset(DatabaseAPI.Database.Classes[atNiD], atOrigin);
+        character.Alignment = Alignment[this.Alignment as keyof typeof Alignment] || Alignment.Hero;
+        character.Name = this.Name;
+        character.Comment = this.Comment ?? '';
+        character.LoadPowerSetsByName(this.PowerSets);
+        character.CurrentBuild!.LastPower = this.LastPower;
 
         try {
             for (let powerIndex = 0; powerIndex < this.PowerEntries.length; powerIndex++) {
@@ -279,8 +292,8 @@ export class CharacterBuildData {
                 let flagged = false;
                 let powerEntry: PowerEntry | null;
 
-                if (powerIndex < MidsContext.Character!.CurrentBuild!.Powers.length) {
-                    powerEntry = MidsContext.Character!.CurrentBuild!.Powers[powerIndex];
+                if (powerIndex < character.CurrentBuild!.Powers.length) {
+                    powerEntry = character.CurrentBuild!.Powers[powerIndex];
                 } else {
                     powerEntry = new PowerEntry();
                     flagged = true;
@@ -315,7 +328,7 @@ export class CharacterBuildData {
                             const powerEntry2 = new PowerEntry(subPower);
                             powerEntry2.StatInclude = true;
 
-                            MidsContext.Character!.CurrentBuild!.Powers.push(powerEntry2);
+                            character.CurrentBuild!.Powers.push(powerEntry2);
                         }
                     }
                 }
@@ -353,8 +366,8 @@ export class CharacterBuildData {
                 powerEntry.IDXPower = power.PowerSetIndex;
 
                 const powerSet = powerEntry.Power?.GetPowerSet();
-                if (powerIndex < MidsContext.Character!.CurrentBuild!.Powers.length) {
-                    const cPower = MidsContext.Character!.CurrentBuild!.Powers[powerIndex];
+                if (powerSet && powerIndex < character.CurrentBuild!.Powers.length) {
+                    const cPower = character.CurrentBuild!.Powers[powerIndex];
                     if (cPower === null) continue;
                     if (powerEntry.Power !== null && !(!cPower.Chosen && (powerSet !== null && powerSet.nArchetype > -1 || powerEntry.Power.GroupName === 'Pool'))) {
                         flagged = !cPower.Chosen;
@@ -364,35 +377,34 @@ export class CharacterBuildData {
                 }
 
                 if (flagged) {
-                    if (powerEntry.Power !== null && powerEntry.Power.InherentType !== Enums.eGridType.None) {
+                    if (powerEntry.Power !== null && powerEntry.Power.InherentType !== eGridType.None) {
                         CharacterBuildData.InherentPowers.push(powerEntry);
                     }
-                } else if (powerEntry.Power !== null && (powerSet !== null && powerSet.nArchetype > -1 || powerEntry.Power.GroupName === 'Pool')) {
-                    MidsContext.Character!.CurrentBuild!.Powers[powerIndex] = powerEntry;
+                } else if (powerEntry.Power !== null && (powerSet && powerSet.nArchetype > -1 || powerEntry.Power.GroupName === 'Pool')) {
+                    character.CurrentBuild!.Powers[powerIndex] = powerEntry;
                 }
             }
 
             const newPowerList: PowerEntry[] = [];
-            newPowerList.push(...CharacterBuildData.SortGridPowers(CharacterBuildData.InherentPowers, Enums.eGridType.Class));
-            newPowerList.push(...CharacterBuildData.SortGridPowers(CharacterBuildData.InherentPowers, Enums.eGridType.Inherent));
-            newPowerList.push(...CharacterBuildData.SortGridPowers(CharacterBuildData.InherentPowers, Enums.eGridType.Powerset));
-            newPowerList.push(...CharacterBuildData.SortGridPowers(CharacterBuildData.InherentPowers, Enums.eGridType.Power));
-            newPowerList.push(...CharacterBuildData.SortGridPowers(CharacterBuildData.InherentPowers, Enums.eGridType.Prestige));
-            newPowerList.push(...CharacterBuildData.SortGridPowers(CharacterBuildData.InherentPowers, Enums.eGridType.Incarnate));
-            newPowerList.push(...CharacterBuildData.SortGridPowers(CharacterBuildData.InherentPowers, Enums.eGridType.Accolade));
-            newPowerList.push(...CharacterBuildData.SortGridPowers(CharacterBuildData.InherentPowers, Enums.eGridType.Pet));
-            newPowerList.push(...CharacterBuildData.SortGridPowers(CharacterBuildData.InherentPowers, Enums.eGridType.Temp));
+            newPowerList.push(...CharacterBuildData.SortGridPowers(CharacterBuildData.InherentPowers, eGridType.Class));
+            newPowerList.push(...CharacterBuildData.SortGridPowers(CharacterBuildData.InherentPowers, eGridType.Inherent));
+            newPowerList.push(...CharacterBuildData.SortGridPowers(CharacterBuildData.InherentPowers, eGridType.Powerset));
+            newPowerList.push(...CharacterBuildData.SortGridPowers(CharacterBuildData.InherentPowers, eGridType.Power));
+            newPowerList.push(...CharacterBuildData.SortGridPowers(CharacterBuildData.InherentPowers, eGridType.Prestige));
+            newPowerList.push(...CharacterBuildData.SortGridPowers(CharacterBuildData.InherentPowers, eGridType.Incarnate));
+            newPowerList.push(...CharacterBuildData.SortGridPowers(CharacterBuildData.InherentPowers, eGridType.Accolade));
+            newPowerList.push(...CharacterBuildData.SortGridPowers(CharacterBuildData.InherentPowers, eGridType.Pet));
+            newPowerList.push(...CharacterBuildData.SortGridPowers(CharacterBuildData.InherentPowers, eGridType.Temp));
             for (const entry of newPowerList) {
-                MidsContext.Character!.CurrentBuild!.Powers.push(entry);
+                character.CurrentBuild!.Powers.push(entry);
             }
         } catch (ex: any) {
-            this._notifier.ShowError(`An error occurred while attempting to read the build data.\r\n${ex.message}\r\n${ex.stack}`);
-            return false;
+            throw new Error(`An error occurred while attempting to read the build data.\r\n${ex.message}\r\n${ex.stack}`);
         }
-        MidsContext.Archetype = MidsContext.Character!.Archetype;
-        MidsContext.Character!.Validate();
-        MidsContext.Character!.Lock();
-        return true;
+        MidsContext.Archetype = character.Archetype;
+        character.Validate();
+        character.Lock();
+        return character;
     }
 
     private LoadEnhancementData(i9Enhancement: I9Slot, enhData: EnhancementData | null): void {
@@ -411,11 +423,11 @@ export class CharacterBuildData {
             i9Enhancement.Enh = enh;
 
             if (enhData.Grade && enhData.Grade.trim() !== '') {
-                i9Enhancement.Grade = Enums.eEnhGrade[enhData.Grade as keyof typeof Enums.eEnhGrade] || Enums.eEnhGrade.None;
+                i9Enhancement.Grade = eEnhGrade[enhData.Grade as keyof typeof eEnhGrade] || eEnhGrade.None;
             }
 
             if (enhData.RelativeLevel && enhData.RelativeLevel.trim() !== '') {
-                i9Enhancement.RelativeLevel = Enums.eEnhRelative[enhData.RelativeLevel as keyof typeof Enums.eEnhRelative] || Enums.eEnhRelative.Even;
+                i9Enhancement.RelativeLevel = eEnhRelative[enhData.RelativeLevel as keyof typeof eEnhRelative] || eEnhRelative.Even;
             }
         }
     }

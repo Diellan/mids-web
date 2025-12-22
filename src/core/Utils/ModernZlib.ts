@@ -1,26 +1,28 @@
 // Converted from C# ModernZlib.cs
 // Note: ComponentAce.Compression.Libs.zlib is C# specific.
-// In TypeScript/Web, we can use pako library for zlib compression/decompression.
-// This implementation provides a placeholder that will need pako or similar library.
+// In TypeScript/Web, we use the pako library for zlib compression/decompression.
 
-// TODO: Install pako: npm install pako
-// import pako from 'pako';
+import pako from 'pako';
 
 export class ModernZlib {
     // Compression and Decompression using zlib
     static CompressChunk(inputBytes: Uint8Array): Uint8Array {
-        // TODO: Implement using pako or similar library
-        // Example with pako:
-        // return pako.deflate(inputBytes);
-        throw new Error('ModernZlib.CompressChunk needs pako library to be implemented');
+        // Use pako deflate with best compression level (equivalent to Z_BEST_COMPRESSION = 9)
+        return pako.deflate(inputBytes, { level: 9 });
     }
 
     static DecompressChunk(inputBytes: Uint8Array, destLength: number): Uint8Array {
-        // TODO: Implement using pako or similar library
-        // Example with pako:
-        // const decompressed = pako.inflate(inputBytes);
-        // return decompressed.slice(0, destLength);
-        throw new Error('ModernZlib.DecompressChunk needs pako library to be implemented');
+        // Decompress using pako inflate
+        const decompressed = pako.inflate(inputBytes);
+        // Resize the output array to destLength (equivalent to Array.Resize in C#)
+        if (decompressed.length >= destLength) {
+            return decompressed.slice(0, destLength);
+        } else {
+            // If decompressed data is shorter, pad with zeros (matching C# Array.Resize behavior)
+            const result = new Uint8Array(destLength);
+            result.set(decompressed, 0);
+            return result;
+        }
     }
 
     // Encoding and Decoding
@@ -54,7 +56,9 @@ export class ModernZlib {
     }
 
     static HexEncodeBytes(inputBytes: Uint8Array): Uint8Array {
-        const hex = inputBytes.map(b => b.toString(16).toUpperCase().padStart(2, '0')).join('');
+        const hex = Array.from(inputBytes)
+            .map((b: number) => b.toString(16).toUpperCase().padStart(2, '0'))
+            .join('');
         return new TextEncoder().encode(hex);
     }
 

@@ -36,27 +36,6 @@ export class Section {
       HasColumn: false
     });
   }
-
-  Add(
-    iText: string,
-    iColor: string,
-    iColumnText: string,
-    iColumnColor: string,
-    iSize: number = 1,
-    iFormat: FontStyle = 'Bold',
-    iIndent: number = 0
-  ): void {
-    this.Content.push({
-      Text: iText,
-      tColor: iColor,
-      tSize: iSize,
-      tFormat: iFormat,
-      tIndent: iIndent,
-      TextColumn: iColumnText,
-      tColorColumn: iColumnColor,
-      HasColumn: !!iColumnText
-    });
-  }
 }
 
 export class PopupData {

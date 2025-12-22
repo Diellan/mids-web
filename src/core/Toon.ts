@@ -1339,25 +1339,14 @@ export class Toon extends Character {
       if (effect1.EffectClass === eEffectClass.Ignored) {
         disqualified = true;
       } else {
-        switch (effectType) {
-          case eEffectType.Enhancement:
-            if (effect1.EffectType !== eEffectType.Enhancement && effect1.EffectType !== eEffectType.DamageBuff) {
-              disqualified = true;
-            }
-            break;
-          case eEffectType.GrantPower:
-            if (effect1.EffectType === eEffectType.Enhancement || effect1.EffectType === eEffectType.DamageBuff) {
-              disqualified = true;
-            }
-            break;
-          default:
-            if (effect1.IgnoreED !== ignoreED ||
-                (sourcePower.PowerType !== ePowerType.GlobalBoost && 
-                 (!effect1.Absorbed_Effect || effect1.Absorbed_PowerType !== ePowerType.GlobalBoost)) ||
-                (effect1.EffectType === eEffectType.GrantPower && effect1.Absorbed_Effect)) {
-              disqualified = true;
-            }
-            break;
+        switch (true) {
+          case effectType === eEffectType.Enhancement && effect1.EffectType !== eEffectType.Enhancement && effect1.EffectType !== eEffectType.DamageBuff:
+          case effectType === eEffectType.GrantPower && (effect1.EffectType === eEffectType.Enhancement || effect1.EffectType === eEffectType.DamageBuff):
+          case effect1.IgnoreED !== ignoreED ||
+            (sourcePower.PowerType !== ePowerType.GlobalBoost && 
+             (!effect1.Absorbed_Effect || effect1.Absorbed_PowerType !== ePowerType.GlobalBoost)) ||
+            (effect1.EffectType === eEffectType.GrantPower && effect1.Absorbed_Effect):
+            disqualified = true;
         }
       }
 
@@ -1381,31 +1370,18 @@ export class Toon extends Character {
         const incRech = powerMath.IgnoreEnhancement(eEnhance.RechargeTime);
         const incEndDisc = powerMath.IgnoreEnhancement(eEnhance.EnduranceDiscount);
         
-        switch (effect1.ETModifies) {
-          case eEffectType.Accuracy:
-            if (incAcc) {
-              powerMath.Accuracy += effect1.BuffedMag;
-            }
-            continue;
-          case eEffectType.EnduranceDiscount:
-            if (incEndDisc) {
-              powerMath.EndCost += effect1.BuffedMag;
-            }
-            continue;
-          case eEffectType.InterruptTime:
-            powerMath.InterruptTime += effect1.BuffedMag;
-            continue;
-          case eEffectType.Range:
-            powerMath.Range += effect1.BuffedMag;
-            continue;
-          case eEffectType.RechargeTime:
-            if (incRech) {
-              powerMath.RechargeTime += effect1.BuffedMag;
-            }
-            continue;
-          default:
-            Toon.HandleDefaultIncarnateEnh(powerMath, effect1);
-            break;
+        if (effect1.ETModifies === eEffectType.Accuracy && incAcc) {
+          powerMath.Accuracy += effect1.BuffedMag;
+        } else if (effect1.ETModifies === eEffectType.EnduranceDiscount && incEndDisc) {
+          powerMath.EndCost += effect1.BuffedMag;
+        } else if (effect1.ETModifies === eEffectType.InterruptTime) {
+          powerMath.InterruptTime += effect1.BuffedMag;
+        } else if (effect1.ETModifies === eEffectType.Range) {
+          powerMath.Range += effect1.BuffedMag;
+        } else if (effect1.ETModifies === eEffectType.RechargeTime && incRech) {
+          powerMath.RechargeTime += effect1.BuffedMag;
+        } else {
+          Toon.HandleDefaultIncarnateEnh(powerMath, effect1);
         }
       } else if (effect1.EffectType === eEffectType.GrantPower) {
         Toon.HandleGrantPowerIncarnate(powerMath, effect1, this._buffedPowers, effIdx, this.Archetype, hIDX);

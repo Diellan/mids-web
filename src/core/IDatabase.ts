@@ -15,9 +15,12 @@ import type { CrypticReplTable } from './Base/CrypticReplTable';
 import type { Origin } from './Base/Data_Classes/Origin';
 import type { TypeGrade } from './Utils/StructAndEnums';
 import { sEnhClass } from './Enums';
+import { Version } from './Utils/Helpers';
 
 export interface IDatabase {
-  Version: string; // System.Version converted to string
+  Version: Version;
+
+  Name: string;
 
   Issue: number;
 

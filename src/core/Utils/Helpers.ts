@@ -6,13 +6,30 @@
 
 import { MidsContext } from '../Base/Master_Classes/MidsContext';
 import { DatabaseAPI } from '../DatabaseAPI';
-import { Enums } from '../Enums';
+import * as Enums from '../Enums';
 
 export interface Version {
     major: number;
     minor: number;
     build: number;
     revision: number;
+}
+
+export function parseVersion(versionString: string): Version {
+    const versionParts = versionString.split('.');
+    return {
+        major: parseInt(versionParts[0]) ?? 0,
+        minor: parseInt(versionParts[1]) ?? 0,
+        build: parseInt(versionParts[2]) ?? 0,
+        revision: parseInt(versionParts[3]) ?? 0
+    };
+}
+
+interface Stat {
+    Type: string;
+    Percentage: string;
+    Hex?: string | null;
+    ExtraData?: string | null;
 }
 
 export class Helpers {
@@ -27,14 +44,7 @@ export class Helpers {
         if (candidate.build > current.build) return true;
         if (candidate.build < current.build) return false;
         return candidate.revision > current.revision;
-    }
-
-    interface Stat {
-        Type: string;
-        Percentage: string;
-        Hex?: string | null;
-        ExtraData?: string | null;
-    }
+    }    
 
     private static readonly DebuffEffectTypes: Enums.eEffectType[] = [
         Enums.eEffectType.Defense,

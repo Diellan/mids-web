@@ -1540,17 +1540,17 @@ export class BuffsXImpl implements BuffsX {
   Reset(): void {
     this.MaxEnd = 0;
     // Note: These would need the actual enum lengths - using approximate sizes
-    this.Effect = new Array(Object.keys(eEffectType).length / 2);
-    this.EffectAux = new Array(this.Effect.length - 1);
-    this.Mez = new Array(Object.keys(eMez).length / 2);
-    this.MezRes = new Array(this.Mez.length);
-    this.Damage = new Array(Object.keys(eDamage).length / 2);
-    this.Defense = new Array(this.Damage.length);
-    this.Resistance = new Array(this.Damage.length);
-    this.Elusivity = new Array(this.Damage.length);
-    this.StatusProtection = new Array(this.Mez.length);
-    this.StatusResistance = new Array(this.Mez.length);
-    this.DebuffResistance = new Array(this.Effect.length);
+    this.Effect = new Array(Object.keys(eEffectType).length / 2).fill(0);
+    this.EffectAux = new Array(this.Effect.length - 1).fill(0);
+    this.Mez = new Array(Object.keys(eMez).length / 2).fill(0);
+    this.MezRes = new Array(this.Mez.length).fill(0);
+    this.Damage = new Array(Object.keys(eDamage).length / 2).fill(0);
+    this.Defense = new Array(this.Damage.length).fill(0);
+    this.Resistance = new Array(this.Damage.length).fill(0);
+    this.Elusivity = new Array(this.Damage.length).fill(0);
+    this.StatusProtection = new Array(this.Mez.length).fill(0);
+    this.StatusResistance = new Array(this.Mez.length).fill(0);
+    this.DebuffResistance = new Array(this.Effect.length).fill(0);
   }
 }
 

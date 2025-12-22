@@ -28,6 +28,7 @@ import { MidsContext } from './Base/Master_Classes/MidsContext';
 import { PowersReplTable } from './PowersReplTable';
 import { CrypticReplTable } from './Base/CrypticReplTable';
 import { ConfigData } from './ConfigData';
+import { parseVersion, Version } from './Utils/Helpers';
 
 export class DatabaseAPI {
   private static AttribMod: Map<string, number> = new Map();
@@ -1002,6 +1003,7 @@ export class DatabaseAPI {
   }
 
   static async LoadAllData(path: string): Promise<void> {
+    DatabaseAPI.Database.Name = path.split('/').pop() ?? '';
     ConfigData.Initialize(true);
     DatabaseAPI.Database.AttribMods = new Modifiers();
 
@@ -1464,18 +1466,7 @@ export class DatabaseAPI {
   }
 
   static get DatabaseName(): string {
-    // Note: MidsContext.Config?.DataPath would need to be implemented
-    // For now, using AppDataPaths default path
-    const defaultPath = AppDataPaths.FDefaultPath;
-    if (defaultPath) {
-      return defaultPath;
-    }
-    // Try to get from MidsContext if available
-    // const configPath = MidsContext.Config?.DataPath;
-    // if (configPath) {
-    //   return path.basename(configPath);
-    // }
-    return 'Default';
+    return this.Database.Name;
   }
 
   static RealmUsesToxicDef(): boolean {
@@ -2201,9 +2192,7 @@ export class DatabaseAPI {
 
       // Parse version string
       const versionString = reader.readString();
-      // Note: Version parsing would need a Version class
-      // For now, storing as string
-      this.Database.Version = versionString;
+      this.Database.Version = parseVersion(versionString);
 
       // Read date - can be year/month/day or binary
       const year = reader.readInt();
@@ -2293,7 +2282,7 @@ export class DatabaseAPI {
 
       this.UpdateDbModified();
       writer.writeString(AppDataPaths.Headers.Db.Start);
-      writer.writeString(this.Database.Version);
+      writer.writeString(JSON.stringify(this.Database.Version));
       writer.writeInt(-1); // Indicates binary date format
       writer.writeLong(this.Database.Date.getTime()); // DateTime.ToBinary equivalent
       writer.writeInt(this.Database.Issue);
@@ -3370,14 +3359,10 @@ export class DatabaseAPI {
   private static UpdateDbModified(): void {
     const now = new Date();
     this.Database.Date = now;
-    // Update version string - format: "Year.Month.Revision"
-    // Note: Version parsing would need a Version class, for now using simple string format
     const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    // Extract revision from current version if possible, otherwise use 1
-    const versionParts = this.Database.Version.split('.');
-    const revision = versionParts.length >= 3 ? parseInt(versionParts[2]) + 1 : 1;
-    this.Database.Version = `${year}.${month}.${revision}`;
+    const month = parseInt(String(now.getMonth() + 1).padStart(2, '0'));
+    const revision = this.Database.Version.revision + 1;
+    this.Database.Version = { major: year, minor: month, build: this.Database.Version.build, revision: revision };
   }
 
   // Note: Many more utility methods would be added here

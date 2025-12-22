@@ -1268,7 +1268,7 @@ export class Power implements IPower {
         maxMode?: boolean
     ): Enums.ShortFX {
         // Handle overload: GetEffectMagSum(iEffect, includeDelayed, onlySelf, onlyTarget, maxMode)
-        if (typeof etModifiesOrIncludeDelayed === 'boolean') {
+        if (typeof etModifiesOrIncludeDelayed === 'boolean' || typeof etModifiesOrIncludeDelayed === 'undefined') {
             const includeDelayed = etModifiesOrIncludeDelayed;
             const onlySelf = damageTypeOrOnlySelf === true;
             const onlyTarget = mezTypeOrOnlyTarget === true;

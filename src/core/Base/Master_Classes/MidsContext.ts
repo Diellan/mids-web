@@ -3,6 +3,7 @@ import type { Archetype } from '../Data_Classes/Archetype';
 import type { Character } from '../Data_Classes/Character';
 import type { Build } from '../../Build';
 import { ConfigData } from '../../ConfigData';
+import { Version } from '../../Utils/Helpers';
 
 export class MidsContext {
   static readonly AppName = 'Mids Reborn';
@@ -12,7 +13,12 @@ export class MidsContext {
   private static readonly AppRevisionVersion = 0;
   static readonly AssemblyVersion = '4.0.0';
   static readonly AssemblyFileVersion = '4.0.0.0';
-  static AppFileVersion: string = '4.0.0.0'; // Version converted to string
+  static AppFileVersion: Version = {
+    major: 4,
+    minor: 0,
+    build: 0,
+    revision: 0
+  };
   static readonly AppVersionStatus = '';
   static readonly Title = "Mids' Reborn";
   static readonly MathLevelBase = 49;

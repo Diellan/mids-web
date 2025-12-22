@@ -1,25 +1,28 @@
-import { Archetype } from "@/core/Base/Data_Classes/Archetype";
+import { Archetype } from "../core/Base/Data_Classes/Archetype";
 import { DatabaseAPI } from "../core/DatabaseAPI";
 import { IDatabase } from "../core/IDatabase";
 import { Toon } from "../core/Toon";
-import { Origin } from "@/core/Base/Data_Classes/Origin";
-import { IPowerset } from "@/core/IPowerset";
-import { PowerEntry } from "@/core/PowerEntry";
-import { IPower } from "@/core/IPower";
-import { TypeGrade } from "@/core/Utils/StructAndEnums";
-import { IEnhancement } from "@/core/IEnhancement";
-import { eEnhGrade, eType, sEnhClass } from "@/core/Enums";
-import { EnhancementSetCollection } from "@/core/EnhancementSetCollection";
-import { I9Slot } from "@/core/I9Slot";
-import { SlotEntry } from "@/core/SlotEntry";
+import { Origin } from "../core/Base/Data_Classes/Origin";
+import { IPowerset } from "../core/IPowerset";
+import { PowerEntry } from "../core/PowerEntry";
+import { IPower } from "../core/IPower";
+import { TypeGrade } from "../core/Utils/StructAndEnums";
+import { IEnhancement } from "../core/IEnhancement";
+import { eEnhGrade, eType, sEnhClass } from "../core/Enums";
+import { EnhancementSetCollection } from "../core/EnhancementSetCollection";
+import { I9Slot } from "../core/I9Slot";
+import { SlotEntry } from "../core/SlotEntry";
+import { Build } from "../core/Build";
+import { TotalStatistics } from "../core/TotalStatistics";
+import { BuildManager } from "../core/BuildFile/BuildManager";
 
 type Listener = () => void;
 
 export class DomainStore {
   private listeners = new Set<Listener>();
 
-  private readonly database: IDatabase;
-  private readonly toon: Toon;
+  private database: IDatabase;
+  private toon: Toon;
 
   // Cache for computed arrays to prevent infinite re-renders
   private cachedPrimaryOptions: IPowerset[] | null = null;
@@ -66,6 +69,11 @@ export class DomainStore {
     // Base power cache is only cleared when highlighted power changes
     this.cachedEnhancedPower = null;
     for (const l of this.listeners) l();
+  }
+
+  async loadBuildFile(buildFile: string) {
+    this.toon = await BuildManager.Instance.LoadFromFile(buildFile);
+    this.notify();
   }
 
   getCharacterName(): string {
@@ -362,5 +370,9 @@ export class DomainStore {
   addSlot(powerIndex: number) {    
     this.toon.BuildSlot(powerIndex);
     this.notify();
+  }
+
+  getTotalStatistics(): TotalStatistics {
+    return this.toon.Totals;
   }
 }

@@ -7,13 +7,11 @@ export class BuildPreferences {
 
     private static readonly PreferencesFilePath: string = 'BuildPreferences.json';
 
-    static Load(): BuildPreferences {
-        // File.Exists and File.ReadAllText are C# specific
-        // In a web environment, this would use localStorage or a server API
+    static async Load(): Promise<BuildPreferences> {
         try {
-            const stored = localStorage.getItem(BuildPreferences.PreferencesFilePath);
-            if (stored) {
-                const parsed = JSON.parse(stored);
+            const stored = await fetch(BuildPreferences.PreferencesFilePath);
+            if (stored.ok) {
+                const parsed = JSON.parse(await stored.text());
                 const prefs = new BuildPreferences();
                 prefs.WarningsIgnoredFor = new Set(parsed.WarningsIgnoredFor || []);
                 return prefs;
@@ -24,14 +22,15 @@ export class BuildPreferences {
         return new BuildPreferences();
     }
 
-    private Save(): void {
-        // File.WriteAllText is C# specific
-        // In a web environment, this would use localStorage or a server API
+    private async Save(): Promise<void> {
         try {
             const data = {
                 WarningsIgnoredFor: Array.from(this.WarningsIgnoredFor)
             };
-            localStorage.setItem(BuildPreferences.PreferencesFilePath, JSON.stringify(data));
+            await fetch(BuildPreferences.PreferencesFilePath, {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
         } catch (ex) {
             console.error('Failed to save build preferences:', ex);
         }

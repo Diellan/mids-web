@@ -17,11 +17,18 @@ import type { LevelMap } from '../../LevelMap';
 import { sEnhClass } from '../../Enums';
 import type { TypeGrade } from '../../Utils/StructAndEnums';
 import { BinaryReader, BinaryWriter } from 'csharp-binary-stream';
+import { Version } from '@/core/BuildFile/DataModels/MetaData';
 
 export class Database implements IDatabase {
   static readonly Instance: Database = new Database();
 
-  Version: string = '';
+  Name: string = '';
+  Version: Version = {
+    major: 0,
+    minor: 0,
+    build: 0,
+    revision: 0
+  };
   Issue: number = 0;
   PageVol: number = 0;
   PageVolText: string = '';

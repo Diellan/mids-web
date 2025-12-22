@@ -10,7 +10,6 @@
 
 import { CharacterBuildData } from './CharacterBuildData';
 import { EnhancementDataConverter } from './EnhancementDataConverter';
-import { IBuildNotifier, BuildNotifier, DialogResult } from './BuildNotifier';
 import { BuildPreferences } from './BuildPreferences';
 import { MidsContext } from '../Base/Master_Classes/MidsContext';
 import { DatabaseAPI } from '../DatabaseAPI';
@@ -19,16 +18,9 @@ import { DataClassifier, DataType, ClassificationResult } from '../Utils/DataCla
 import { Compression, CompressionResult } from '../Utils/Compression';
 import { ModernZlib } from '../Utils/ModernZlib';
 import { Helpers } from '../Utils/Helpers';
-// TODO: Import when available
-// import { MidsCharacterFileFormat } from '../MidsCharacterFileFormat';
-
-// Placeholder for MidsCharacterFileFormat
-namespace MidsCharacterFileFormat {
-    export function MxDReadSaveData(bytes: Uint8Array, flag: boolean): boolean {
-        // TODO: Implement actual MxD file reading
-        throw new Error('MidsCharacterFileFormat.MxDReadSaveData needs to be implemented');
-    }
-}
+import { Character } from '../Base/Data_Classes/Character';
+import { MidsCharacterFileFormat } from '../MidsCharacterFileFormat';
+import { Toon } from '../Toon';
 
 export class BuildManager {
     private static _lazyInstance: BuildManager | null = null;
@@ -40,71 +32,49 @@ export class BuildManager {
     }
 
     BuildData: CharacterBuildData | null = null;
-    private readonly _notifier: IBuildNotifier;
-    private readonly _preferences: BuildPreferences;
 
     private constructor() {
         this.BuildData = CharacterBuildData.Instance;
-        this._notifier = new BuildNotifier();
-        this._preferences = BuildPreferences.Load();
     }
 
-    async LoadFromFile(fileName: string | null): Promise<boolean> {
-        if (!fileName || fileName.trim() === '') return false;
-        let returnedVal = false;
+    async LoadFromFile(fileName: string | null): Promise<Toon> {
+        const preferences = await BuildPreferences.Load();
+        if (!fileName || fileName.trim() === '') {
+            throw new Error('File name is required');
+        }
 
         // File.ReadAllText is C# specific
         // In a web environment, this would use fetch or FileReader API
-        let data: string;
+        let parsed: CharacterBuildData;
         try {
             const response = await fetch(fileName);
-            data = await response.text();
+            parsed = await response.json();
         } catch (ex: any) {
-            this._notifier.ShowError(`Failed to read file: ${ex.message}`);
-            return false;
+            throw new Error(`Failed to read file: ${ex.message}`);
         }
 
         try {
             // Custom JSON deserialization with EnhancementDataConverter
-            const parsed = JSON.parse(data);
             this.BuildData = this.DeserializeCharacterBuildData(parsed);
             if (this.BuildData === null) {
                 throw new Error('Failed to deserialize build data');
             }
         } catch (ex: any) {
-            this._notifier.ShowError(ex.message);
+            throw new Error(ex.message);
         }
 
         if (this.BuildData === null) {
-            this._notifier.ShowError(`Cannot load ${fileName} - error reading build data.\r\n\r\nBuildData`);
-            return false;
+            throw new Error(`Cannot load ${fileName} - error reading build data.\r\n\r\nBuildData`);
         }
 
         const metaData = this.BuildData.BuiltWith;
         if (metaData === null) {
-            this._notifier.ShowError(`Cannot load ${fileName} - error reading build metadata.\r\n\r\nmetaData`);
-            return false;
+            throw new Error(`Cannot load ${fileName} - error reading build metadata.\r\n\r\nmetaData`);
         }
 
         // FileInfo is C# specific, using fileName directly
         if (DatabaseAPI.DatabaseName !== metaData.Database) {
-            // Directory.EnumerateDirectories is C# specific
-            // In a web environment, this would need to be handled differently
-            // For now, show an error
-            this._notifier.ShowError(`This build requires the ${metaData.Database} be installed prior to loading it.\r\nPlease install the database and try again.`);
-            return false;
-
-            // Application.Restart is Windows Forms specific and not available in web
-            // const result = this._notifier.ShowWarningDialog(
-            //     `This build was created using the ${metaData.Database} database.\r\nDo you want to reload and switch to this database, then attempt to load the build?`,
-            //     fileName
-            // );
-            // if (result !== DialogResult.Yes) return returnedVal;
-            // MidsContext.Config.LastFileName = fileName;
-            // MidsContext.Config.DataPath = selected;
-            // MidsContext.Config.SavePath = selected;
-            // MidsContext.Config.SaveConfig();
-            // Application.Restart();
+            throw new Error(`This build requires the ${metaData.Database} be installed prior to loading it.\r\nPlease install the database and try again.`);
         } else {
             // Compare Database Version if Enabled
             if (MidsContext.Config?.WarnOnOldDbMbd) {
@@ -119,43 +89,27 @@ export class BuildManager {
                 let continueLoad = false;
 
                 if (outDatedDb) {
-                    if (this._preferences.ShouldSkipWarning(fileName)) {
+                    if (preferences.ShouldSkipWarning(fileName)) {
                         continueLoad = true;
                     } else {
-                        const result = this._notifier.ShowWarningDialog(
-                            `This build was created in an older version of the ${metaData.Database} database.\r\nSome powers and/or enhancements may have changed, you may need to rebuild some of it.`,
-                            'Warning',
-                            true
-                        );
-                        switch (result) {
-                            case DialogResult.Ignore:
-                                this._preferences.AddIgnoredBuild(fileName);
-                                continueLoad = true;
-                                break;
-                            case DialogResult.OK:
-                                continueLoad = true;
-                                break;
+                        const result = confirm(
+                            `This build was created in an older version of the ${metaData.Database} database.\r\nSome powers and/or enhancements may have changed, you may need to rebuild some of it.`
+                        );                        
+                        if (result) {
+                            continueLoad = true;
                         }
                     }
                 }
 
                 if (newerDb) {
-                    if (this._preferences.ShouldSkipWarning(fileName)) {
+                    if (preferences.ShouldSkipWarning(fileName)) {
                         continueLoad = true;
                     } else {
-                        const result = this._notifier.ShowWarningDialog(
-                            `This build was created in an newer version of the ${metaData.Database} database.\r\nIt is recommended that you update the database.`,
-                            'Warning',
-                            true
+                        const result = confirm(
+                            `This build was created in an newer version of the ${metaData.Database} database.\r\nIt is recommended that you update the database.`
                         );
-                        switch (result) {
-                            case DialogResult.Ignore:
-                                this._preferences.AddIgnoredBuild(fileName);
-                                continueLoad = true;
-                                break;
-                            case DialogResult.OK:
-                                continueLoad = true;
-                                break;
+                        if (result) {
+                            continueLoad = true;
                         }
                     }
                 }
@@ -163,26 +117,24 @@ export class BuildManager {
                 if (!outDatedDb && !newerDb) continueLoad = true;
 
                 if (continueLoad) {
-                    returnedVal = this.BuildData.LoadBuild();
+                    return this.BuildData.LoadBuild();
                 }
             } else {
-                returnedVal = this.BuildData.LoadBuild();
+                return this.BuildData.LoadBuild();
             }
         }
-
-        return returnedVal;
+        throw new Error('Failed to load build data');
     }
 
-    async SaveToFile(fileName: string | null): Promise<boolean> {
+    async SaveToFile(character: Character | null, fileName: string | null): Promise<boolean> {
         if (!fileName || fileName.trim() === '') return false;
-        if (MidsContext.Character?.CurrentBuild === null) return false;
-        const powerEntries = MidsContext.Character.CurrentBuild.Powers.slice(0, 24);
+        if (character === null || character.CurrentBuild === null) return false;
+        const powerEntries = character.CurrentBuild.Powers.slice(0, 24);
         if (powerEntries.every(x => x?.Power === null)) {
-            this._notifier.ShowError("Unable to save build, you haven't selected any powers.");
-            return false;
+            throw new Error("Unable to save build, you haven't selected any powers.");
         }
 
-        this.BuildData?.Update(MidsContext.Character);
+        this.BuildData?.Update(character);
         const serialized = JSON.stringify(this.BuildData, null, 2);
 
         // File.WriteAllText is C# specific
@@ -199,8 +151,7 @@ export class BuildManager {
             URL.revokeObjectURL(url);
             return true;
         } catch (ex: any) {
-            this._notifier.ShowError(`Failed to save file: ${ex.message}`);
-            return false;
+            throw new Error(`Failed to save file: ${ex.message}`);
         }
     }
 
@@ -212,9 +163,10 @@ export class BuildManager {
         return this.BuildData !== null ? await this.BuildData.GenerateChunkData() : '';
     }
 
-    private LoadShareData(data: string | null, id: string | null = null): boolean {
-        if (!data || data.trim() === '') return false;
-        let returnedVal = false;
+    private LoadShareData(data: string | null, id: string | null = null): Character {
+        if (!data || data.trim() === '') {
+            throw new Error('Data is required');
+        }
         try {
             const parsed = JSON.parse(data);
             this.BuildData = this.DeserializeCharacterBuildData(parsed);
@@ -223,25 +175,21 @@ export class BuildManager {
             }
             if (id !== null) this.BuildData.Id = id;
         } catch (ex: any) {
-            this._notifier.ShowError(ex.message);
+            throw new Error(ex.message);
         }
 
         if (this.BuildData === null) {
-            this._notifier.ShowError(`Cannot load share data - An error occurred during reading build data.\r\n\r\nBuildData`);
-            return false;
+            throw new Error(`Cannot load share data - An error occurred during reading build data.\r\n\r\nBuildData`);
         }
 
         const metaData = this.BuildData.BuiltWith;
         if (metaData === null) {
-            this._notifier.ShowError(`Cannot load share data - An error occurred during reading build metadata.\r\n\r\nmetaData`);
-            return false;
+            throw new Error(`Cannot load share data - An error occurred during reading build metadata.\r\n\r\nmetaData`);
         }
 
         if (DatabaseAPI.DatabaseName !== metaData.Database) {
             // Directory.EnumerateDirectories is C# specific
-            this._notifier.ShowError(`This build requires the ${metaData.Database} be installed prior to loading it.\r\nPlease install the database and try again.`);
-            this._notifier.ShowWarning(`This build requires the ${metaData.Database}, however you are currently using the ${DatabaseAPI.DatabaseName} database. Please load the correct database and try again.`);
-            return false;
+            throw new Error(`This build requires the ${metaData.Database} be installed prior to loading it.\r\nPlease install the database and try again.`);
         }
 
         // Compare Database Version if Enabled
@@ -251,37 +199,33 @@ export class BuildManager {
             let continueLoad = false;
 
             if (outDatedDb) {
-                const result = this._notifier.ShowWarningDialog(
+                const result = confirm(
                     `This build was created in an older version of the ${metaData.Database} database.\r\nSome powers and/or enhancements may have changed, you may need to rebuild some of it.`,
-                    'Warning'
                 );
-                continueLoad = result === DialogResult.OK;
+                continueLoad = result;
             }
 
             if (newerDb) {
-                const result = this._notifier.ShowWarningDialog(
+                const result = confirm(
                     `This build was created in an newer version of the ${metaData.Database} database.\r\nIt is recommended that you update the database.`,
-                    'Warning'
                 );
-                continueLoad = result === DialogResult.OK;
+                continueLoad = result;
             }
 
             if (!outDatedDb && !newerDb) continueLoad = true;
 
             if (continueLoad) {
-                returnedVal = this.BuildData.LoadBuild();
+                return this.BuildData.LoadBuild();
             }
         } else {
-            returnedVal = this.BuildData.LoadBuild();
+            return this.BuildData.LoadBuild();
         }
-
-        return returnedVal;
+        throw new Error('Failed to load share data');
     }
 
-    async ValidateAndLoadImportData(classificationResult: ClassificationResult): Promise<boolean> {
+    async ValidateAndLoadImportData(classificationResult: ClassificationResult): Promise<Character> {
         if (!classificationResult.IsValid) {
-            this._notifier.ShowError('Invalid or unknown data format.');
-            return false;
+            throw new Error('Invalid or unknown data format.');
         }
 
         let uncompressedSize = -1;
@@ -294,25 +238,24 @@ export class BuildManager {
                 // Split input to separate header and data
                 const lines = classificationResult.Content.split(/[\r\n]+/).filter(l => l.trim() !== '');
                 if (lines.length < 2) {
-                    this._notifier.ShowError('Input format is incorrect. No data found after header.');
-                    return false;
+                    throw new Error('Input format is incorrect. No data found after header.');
                 }
 
-                if (lines.length <= 0) return false;
+                if (lines.length <= 0) {
+                    throw new Error('Input format is incorrect. No data found after header.');
+                }
                 // Clean the header by removing surrounding pipes and trimming whitespace
                 const header = lines[0].trim().replace(/^\|+|\|+$/g, '').trim();
                 const headerItems = header.split(';').filter(item => item.trim() !== '');
                 if (headerItems.length !== 5) {
-                    this._notifier.ShowError('Header format is incorrect.');
-                    return false;
+                    throw new Error('Header format is incorrect.');
                 }
 
                 try {
                     uncompressedSize = parseInt(headerItems[1], 10);
                     compressedSize = parseInt(headerItems[2], 10);
                 } catch (ex: any) {
-                    this._notifier.ShowError('Header contains invalid size information.');
-                    return false;
+                    throw new Error('Header contains invalid size information.');
                 }
 
                 data = lines.slice(1).join('').replace(/\|/g, '');
@@ -330,84 +273,72 @@ export class BuildManager {
             case DataType.Mxd:
                 // Process as HEX
                 if (!/^[0-9A-F]+$/i.test(data)) {
-                    this._notifier.ShowError('Data does not contain valid HEX values.');
-                    return false;
+                    throw new Error('Data does not contain valid HEX values.');
                 }
 
                 try {
                     const decodedBytes = ModernZlib.HexDecodeBytes(new TextEncoder().encode(data));
                     if (decodedBytes.length !== compressedSize) {
-                        this._notifier.ShowError('Compressed size mismatch.');
-                        return false;
+                        throw new Error('Compressed size mismatch.');
                     }
 
                     const decompressedBytes = ModernZlib.DecompressChunk(decodedBytes, uncompressedSize);
                     // Now use the decompressed bytes with the MxDReadSaveData method
-                    const loadSuccess = MidsCharacterFileFormat.MxDReadSaveData(decompressedBytes, false);
-                    return loadSuccess;
+                    return MidsCharacterFileFormat.MxDReadSaveData(decompressedBytes, false);
                 } catch (ex: any) {
-                    this._notifier.ShowError(`Failed to process MxD data: ${ex.message}`);
-                    return false;
+                    throw new Error(`Failed to process MxD data: ${ex.message}`);
                 }
 
             case DataType.Mbd:
                 // Process as Base64
                 if (!/^[a-zA-Z0-9+/]*={0,3}$/.test(data)) {
-                    this._notifier.ShowError('Data is not valid BASE64.');
-                    return false;
+                    throw new Error('Data is not valid BASE64.');
                 }
 
                 try {
                     const decoded = await Compression.DecompressFromBase64(data);
-                    if (decoded.CompressedSize === compressedSize) return this.LoadShareData(decoded.OutString);
-                    this._notifier.ShowError('Compressed size mismatch.');
-                    return false;
+                    if (decoded.CompressedSize === compressedSize) {
+                        return this.LoadShareData(decoded.OutString);
+                    }
+                    throw new Error('Compressed size mismatch.');
                 } catch (ex: any) {
-                    this._notifier.ShowError(`Failed to process MBD data: ${ex.message}`);
-                    return false;
+                    throw new Error(`Failed to process MBD data: ${ex.message}`);
                 }
 
             case DataType.UnkBase64:
                 if (!/^[a-zA-Z0-9+/]*={0,3}$/.test(data)) {
-                    this._notifier.ShowError('Data is not valid BASE64.');
-                    return false;
+                    throw new Error('Data is not valid BASE64.');
                 }
 
                 try {
                     const unkDecoded = await Compression.DecompressFromBase64(data);
                     return this.LoadShareData(unkDecoded.OutString);
                 } catch (ex: any) {
-                    this._notifier.ShowError('An unknown error occurred.');
-                    return false;
+                    throw new Error('An unknown error occurred.');
                 }
 
             case DataType.Unknown:
                 break;
             default:
-                this._notifier.ShowError('Unsupported data type detected.');
-                return false;
+                throw new Error('Unsupported data type detected.');
         }
 
-        return false;
+        throw new Error('Failed to load import data');
     }
 
-    async ValidateAndLoadSchemaData(data: string, id: string | null = null): Promise<boolean> {
+    async ValidateAndLoadSchemaData(data: string, id: string | null = null): Promise<Character> {
         if (!/^[a-zA-Z0-9+/]*={0,3}$/.test(data)) {
-            this._notifier.ShowError('Data is not valid BASE64.');
-            return false;
+            throw new Error('Data is not valid BASE64.');
         }
         try {
             const decoded = await Compression.DecompressFromBase64(data);
             return this.LoadShareData(decoded.OutString, id);
         } catch (ex: any) {
-            this._notifier.ShowError(`Failed to process schema data: ${ex.message}`);
-            return false;
+            throw new Error(`Failed to process schema data: ${ex.message}`);
         }
     }
 
-    private DeserializeCharacterBuildData(parsed: any): CharacterBuildData | null {
-        // Custom deserialization with EnhancementDataConverter
-        // This is a simplified version - full implementation would need proper JSON converter handling
+    private DeserializeCharacterBuildData(parsed: CharacterBuildData): CharacterBuildData | null {
         try {
             const buildData = new CharacterBuildData();
             buildData.Id = parsed.Id || null;
@@ -419,16 +350,8 @@ export class BuildManager {
             buildData.Comment = parsed.Comment || null;
             buildData.PowerSets = parsed.PowerSets || [];
             buildData.LastPower = parsed.LastPower || 0;
-            buildData.PowerEntries = (parsed.PowerEntries || []).map((pe: any) => {
-                if (pe === null) return null;
-                // Use EnhancementDataConverter for slot entries
-                // This is simplified - full implementation would properly convert EnhancementData
-                return pe;
-            });
-            // BuiltWith would need proper deserialization
-            if (parsed.BuiltWith) {
-                // buildData.BuiltWith = ...;
-            }
+            buildData.PowerEntries = parsed.PowerEntries || [];
+            buildData.BuiltWith = parsed.BuiltWith || null;
             return buildData;
         } catch (ex: any) {
             console.error('Failed to deserialize CharacterBuildData:', ex);
