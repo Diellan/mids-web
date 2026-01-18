@@ -179,6 +179,11 @@ export class DomainStore {
     return this.cachedPowers;
   }
 
+  getPowerEntryById(id: string): PowerEntry | null {
+    const powerEntry = this.getPowers().find(p => p && p.id === id) ?? null;
+    return powerEntry;
+  }
+
   togglePower(power: IPower) {
     this.toon.BuildPower(power.PowerSetID, power.PowerIndex);
     // Clear powers cache when build changes - getPowers will create a new copy
@@ -338,17 +343,18 @@ export class DomainStore {
     return this.database.EnhancementSets.filter(set => set.SetType === setTypeId) as EnhancementSetCollection;
   }
 
-  pickEnhancement(enhancementIndex: number, grade: eEnhGrade, powerIndex: number, slotIndex: number) {
+  pickEnhancement(enhancementIndex: number, grade: eEnhGrade, powerEntryId: string, slotIndex: number) {
+    console.debug(`Picking enhancement ${enhancementIndex} (grade ${eEnhGrade[grade]}) for power index ${powerEntryId}, slot index ${slotIndex}`);
     const enhancement = this.database.Enhancements[enhancementIndex];
     if (!enhancement) {
       throw new Error('Enhancement not found');
     }
 
-    if (!this.toon.CurrentBuild?.EnhancementTest(slotIndex, powerIndex, enhancement.StaticIndex)) {
+    if (!this.toon.CurrentBuild?.EnhancementTest(slotIndex, powerEntryId, enhancement.StaticIndex)) {
       throw new Error('Enhancement test failed');
     }
 
-    const power = this.toon.CurrentBuild?.Powers[powerIndex];
+    const power = this.toon.CurrentBuild?.Powers.find(p => p && p.id === powerEntryId);
     if (!power) {
       throw new Error('Power not found');
     }
@@ -367,8 +373,8 @@ export class DomainStore {
     return this.toon.CanPlaceSlot;
   }
 
-  addSlot(powerIndex: number) {    
-    this.toon.BuildSlot(powerIndex);
+  addSlot(powerEntryId: string) {    
+    this.toon.BuildSlot(powerEntryId);
     this.notify();
   }
 

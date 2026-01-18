@@ -77,11 +77,15 @@ const PowerTitle = styled(Typography)(({ theme }) => ({
   fontStyle: 'italic'
 }));
 
-const PowerEnhancer = ({ powerEntry, ...prop }: { powerEntry: PowerEntry }) => {
+const PowerEnhancer = ({ powerEntryId, ...prop }: { powerEntryId: string }) => {
   const domainStore = useDomainStoreInstance();
+  const powerEntry = useDomainStore(store => store.getPowerEntryById(powerEntryId));
+  if (!powerEntry) {
+    return null;
+  }
 
   const addSlot = () => {
-    domainStore.addSlot(powerEntry.NIDPower);
+    domainStore.addSlot(powerEntryId);
   };
   const canPlaceSlot = useDomainStore(store => store.canPlaceSlot());
   const highlightedPower = useDomainStore(store => store.getHighlightedPower());
@@ -89,7 +93,8 @@ const PowerEnhancer = ({ powerEntry, ...prop }: { powerEntry: PowerEntry }) => {
   const isChosen = highlightedPower?.NIDPower === powerEntry.NIDPower && isPicked;
 
   const setEnhancement = (enhancement: number, grade: eEnhGrade, slotIndex: number) => {
-    domainStore.pickEnhancement(enhancement, grade, powerEntry.IDXPower, slotIndex);
+    console.debug({ powerEntry }, `Setting enhancement ${enhancement} (grade ${eEnhGrade[grade]}) for slot index ${slotIndex} on power ${powerEntry.NIDPower} with index ${powerEntry.IDXPower}`);
+    domainStore.pickEnhancement(enhancement, grade, powerEntryId, slotIndex);
   };
 
   return (

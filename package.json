@@ -28,6 +28,8 @@
     "@mui/material": "^7.3.6",
     "csharp-binary-stream": "^2.0.0",
     "electron-updater": "^6.3.9",
+    "mathjs":"^15.1.0",
+    "nanoid": "^5.1.6",
     "pako": "^2.1.0"
   },
   "devDependencies": {

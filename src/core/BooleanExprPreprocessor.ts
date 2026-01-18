@@ -3,6 +3,7 @@ import type { IEffect } from './IEffect';
 import { MidsContext } from './Base/Master_Classes/MidsContext';
 import { DatabaseAPI } from './DatabaseAPI';
 import { ConfigData } from './ConfigData';
+import { evaluate } from 'mathjs';
 
 export class BooleanExprPreprocessor {
   private static GetConditions(effect: IEffect): string[] {
@@ -333,10 +334,10 @@ export class BooleanExprPreprocessor {
     try {
       // Replace AND and OR with function calls
       let processedExpr = prefixExpr
-        .replace(/AND\(([^,]+),\s*([^)]+)\)/g, (_, a, b) => `(${a} > 0 && ${b} > 0) ? 1 : 0`)
-        .replace(/OR\(([^,]+),\s*([^)]+)\)/g, (_, a, b) => `(${a} > 0 || ${b} > 0) ? 1 : 0`);
+        .replace(/AND\(([^,]+),\s*([^)]+)\)/g, (_, a, b) => `(${a} > 0 and ${b} > 0) ? 1 : 0`)
+        .replace(/OR\(([^,]+),\s*([^)]+)\)/g, (_, a, b) => `(${a} > 0 or ${b} > 0) ? 1 : 0`);
 
-      const result = Function(`"use strict"; return (${processedExpr})`)();
+      const result = evaluate(processedExpr);
       return typeof result === 'number' ? result > 0 : false;
     } catch (ex: any) {
       console.warn(`Conditional check failed in ${prefixExpr}\nPower: ${effect.GetPower()?.FullName}\n${ex.message}`);

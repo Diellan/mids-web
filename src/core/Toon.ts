@@ -205,12 +205,8 @@ export class Toon extends Character {
     this.ResetLevel();
   }
 
-  public BuildSlot(powerNID: number, slotIDX: number = -1): number {
-    if (powerNID < 0) {
-      return -1;
-    }
-
-    const powerEntry = this.CurrentBuild?.Powers.find(p => p?.NIDPower === powerNID);
+  public BuildSlot(powerEntryId: string, slotIDX: number = -1): number {
+    const powerEntry = this.CurrentBuild?.Powers.find(p => p?.id === powerEntryId);
     if (!powerEntry) {
       return -1;
     }

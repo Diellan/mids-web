@@ -17,7 +17,7 @@ const SelectWithIcon = ({
 } & SelectProps) => {
   return (
     <Select
-        value={selected.name}
+        value={selected.key}
         onChange={props.onChange}
         label={label}
         renderValue={() => (<div style={{ display: "flex", alignItems: "center" }}>

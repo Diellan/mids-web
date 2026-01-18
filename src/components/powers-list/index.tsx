@@ -15,7 +15,7 @@ const PowersList = () => {
       <Grid container>
         {powers.filter(p => p !== null).map((power, index) => (
           <Grid size={4} key={index} sx={{ minWidth: 235}}>
-            <PowerEnhancer powerEntry={power} />
+            <PowerEnhancer powerEntryId={power.id} />
           </Grid>
         ))}
       </Grid>
@@ -24,7 +24,7 @@ const PowersList = () => {
       <Grid container>
         {inherentPowers.filter(p => p !== null).map((power) => (
           <Grid size={4} key={power?.Power?.PowerName} sx={{ minWidth: 235}}>
-            <PowerEnhancer powerEntry={power} />
+            <PowerEnhancer powerEntryId={power.id} />
           </Grid>
         ))}
       </Grid>

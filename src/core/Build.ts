@@ -936,7 +936,7 @@ export class Build {
     return index;
   }
 
-  EnhancementTest(iSlotID: number, hIdx: number, iEnh: number, silent: boolean = false): boolean {
+  EnhancementTest(iSlotID: number, powerEntryId: string, iEnh: number, silent: boolean = false): boolean {
     if (iEnh < 0 || iSlotID < 0) return false;
 
     const enhancement = DatabaseAPI.Database.Enhancements[iEnh];
@@ -944,9 +944,10 @@ export class Build {
     let foundInPower = false;
     let foundEnh = '';
     let mutexType = -1;
-    if (enhancement.TypeID === eType.SetO && enhancement.nIDSet > -1 && hIdx > -1 && this.Powers[hIdx]?.Power != null) {
+    const powerEntry = this.Powers.find(p => p?.id === powerEntryId);
+    if (enhancement.TypeID === eType.SetO && enhancement.nIDSet > -1 && powerEntry?.Power != null) {
       const setType = DatabaseAPI.Database.EnhancementSets[enhancement.nIDSet].SetType;
-      const power = this.Powers[hIdx]!.Power!;
+      const power = powerEntry.Power;
       const allowedSet = power.SetTypes?.some(t => t === setType) ?? false;
 
       if (!allowedSet) {
@@ -961,7 +962,7 @@ export class Build {
 
       const power = this.Powers[powerIdx]!;
       for (let slotIndex = 0; slotIndex < power.Slots.length; slotIndex++) {
-        if ((slotIndex === iSlotID && powerIdx === hIdx) || power.Slots[slotIndex].Enhancement.Enh <= -1) {
+        if ((slotIndex === iSlotID && power.id === powerEntryId) || power.Slots[slotIndex].Enhancement.Enh <= -1) {
           continue;
         }
 
@@ -1009,7 +1010,7 @@ export class Build {
           }
         }
 
-        if (enhancement.nIDSet <= -1 || powerIdx !== hIdx || power.Slots[slotIndex].Enhancement.Enh !== iEnh) continue;
+        if (enhancement.nIDSet <= -1 || power.id !== powerEntryId || power.Slots[slotIndex].Enhancement.Enh !== iEnh) continue;
         foundInPower = true;
         break;
       }
