@@ -1052,7 +1052,7 @@ export class DatabaseAPI {
    
     await DatabaseAPI.LoadReplacementTable(path);
    
-    await DatabaseAPI.LoadCrypticReplacementTable();
+    await DatabaseAPI.LoadCrypticReplacementTable(path);
    
     await DatabaseAPI.MatchAllIDs();
     await DatabaseAPI.AssignSetBonusIndexes();
@@ -3242,15 +3242,9 @@ export class DatabaseAPI {
     }
   }
 
-  static async LoadCrypticReplacementTable(): Promise<void> {
-    const filename = AppDataPaths.CNamePowersRepl;
-    if (!filename) {
-      this.Database.CrypticReplTable = null;
-      return;
-    }
-
+  static async LoadCrypticReplacementTable(path: string): Promise<void> {
     try {
-      await CrypticReplTable.Initialize();
+      await CrypticReplTable.Initialize(path);
       this.Database.CrypticReplTable = CrypticReplTable.Current;
     } catch (ex: any) {
       console.warn(`Error loading CrypticReplTable: ${ex.message}`);

@@ -18,13 +18,9 @@ export class CrypticReplTable {
     this._table = table;
   }
 
-  static async Initialize(): Promise<void> {
+  static async Initialize(path: string): Promise<void> {
     try {
-      const filename = AppDataPaths.CNamePowersRepl;
-      if (!filename) {
-        throw new Error('CNamePowersRepl path not configured');
-      }
-
+      const filename = AppDataPaths.SelectDataFileLoad(AppDataPaths.MxdbCrypticReplTable, path);
       const response = await fetch(filename);
       if (!response.ok) {
         throw new Error(`Failed to load CrypticReplTable file: ${filename}`);
