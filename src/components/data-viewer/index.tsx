@@ -3,15 +3,18 @@ import { useDomainStore } from "@/domainStore/useDomainStore";
 import { TabContext, TabList, TabPanel } from "@mui/lab";
 import { Box, Tab, Typography } from "@mui/material";
 import { useState, useMemo } from "react";
+import DataViewerInfo from "./info";
+import DataViewerTotals from "./totals";
+import DataViewerEnhance from "./enhance";
 
 const DataViewer = () => {
   const highlightedPower = useDomainStore(store => store.getHighlightedPower());
   const [value, setValue] = useState('info');
   const domainStore = useDomainStoreInstance();
-  
+
   const effectsItemPairs = useMemo(
     () => domainStore.getPowerEffects(highlightedPower),
-    [highlightedPower]
+    [highlightedPower, domainStore]
   );
 
   return (
@@ -25,13 +28,11 @@ const DataViewer = () => {
         </TabList>
       </Box>
       <TabPanel value="info">
-        <Typography variant="h6">{highlightedPower?.Power?.DisplayName}</Typography>
-        <Typography variant="body1">{highlightedPower?.Power?.DescShort}</Typography>
-        <Typography variant="body1">{highlightedPower?.Power?.DescLong}</Typography>
+        {highlightedPower && <DataViewerInfo power={highlightedPower} />}
       </TabPanel>
       <TabPanel value="effects">
         {effectsItemPairs.length > 0 ? (
-          <Box>
+          <Box sx={{ p: 2 }}>
             {effectsItemPairs.map((item, index) => (
               <Box key={index} sx={{ mb: 1, p: 1, border: 1, borderColor: 'divider', borderRadius: 1 }}>
                 <Typography
@@ -63,14 +64,10 @@ const DataViewer = () => {
         )}
       </TabPanel>
       <TabPanel value="totals">
-        <Typography variant="body2" color="text.secondary">
-          Totals view coming soon
-        </Typography>
+        <DataViewerTotals />
       </TabPanel>
       <TabPanel value="enhance">
-        <Typography variant="body2" color="text.secondary">
-          Enhancements view coming soon
-        </Typography>
+        <DataViewerEnhance />
       </TabPanel>
     </TabContext>
   );
