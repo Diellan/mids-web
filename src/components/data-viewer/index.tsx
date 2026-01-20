@@ -1,4 +1,4 @@
-import { GroupedFx } from "@/core/GroupedFx";
+import { useDomainStoreInstance } from "@/domainStore/domainStoreContext";
 import { useDomainStore } from "@/domainStore/useDomainStore";
 import { TabContext, TabList, TabPanel } from "@mui/lab";
 import { Box, Tab, Typography } from "@mui/material";
@@ -6,23 +6,12 @@ import { useState, useMemo } from "react";
 
 const DataViewer = () => {
   const highlightedPower = useDomainStore(store => store.getHighlightedPower());
-  const basePower = useDomainStore(store => store.getBasePower());
-  const enhancedPower = useDomainStore(store => store.getEnhancedPower());
   const [value, setValue] = useState('info');
-
-  const groupedRankedEffects = useMemo(
-    () => GroupedFx.AssembleGroupedEffects(enhancedPower ?? basePower ?? null),
-    [enhancedPower, basePower]
-  );
-  
-  const rankedEffects = useMemo(
-    () => enhancedPower?.GetRankedEffects(true) ?? basePower?.GetRankedEffects(true) ?? [],
-    [enhancedPower, basePower]
-  );
+  const domainStore = useDomainStoreInstance();
   
   const effectsItemPairs = useMemo(
-    () => GroupedFx.GenerateListItems(groupedRankedEffects, basePower, enhancedPower ?? basePower, rankedEffects, 10),
-    [groupedRankedEffects, basePower, enhancedPower, rankedEffects]
+    () => domainStore.getPowerEffects(highlightedPower),
+    [highlightedPower]
   );
 
   return (

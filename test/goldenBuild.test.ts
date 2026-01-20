@@ -95,6 +95,8 @@ describe("Golden Mids build comparisons", async () => {
 
     // Compare with tolerance
     expect(actualTotals.Absorb).toBeCloseTo(expected.Absorb, 2);
+    expect(actualTotals.BuffAcc).toBeCloseTo(expected.BuffAcc, 2);
+    expect(actualTotals.BuffToHit).toBeCloseTo(expected.BuffToHit, 2);
     expect(actualTotals.EndRec).toBeCloseTo(expected.EndRec, 2);
     expect(actualTotals.EndUse).toBeCloseTo(expected.EndUse, 2);
     expect(actualTotals.EndMax).toBeCloseTo(expected.EndMax, 2);
@@ -106,8 +108,6 @@ describe("Golden Mids build comparisons", async () => {
     expect(actualTotals.ThreatLevel).toBeCloseTo(expected.ThreatLevel, 2);
     expect(actualTotals.Perception).toBeCloseTo(expected.Perception, 2);
     expect(actualTotals.BuffHaste).toBeCloseTo(expected.BuffHaste, 2);
-    expect(actualTotals.BuffAcc).toBeCloseTo(expected.BuffAcc, 2);
-    expect(actualTotals.BuffToHit).toBeCloseTo(expected.BuffToHit, 2);
     expect(actualTotals.BuffDam).toBeCloseTo(expected.BuffDam, 2);
     expect(actualTotals.BuffEndRdx).toBeCloseTo(expected.BuffEndRdx, 2);
     expect(actualTotals.BuffRange).toBeCloseTo(expected.BuffRange, 2);

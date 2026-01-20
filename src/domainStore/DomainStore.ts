@@ -15,6 +15,7 @@ import { SlotEntry } from "../core/SlotEntry";
 import { Build } from "../core/Build";
 import { TotalStatistics } from "../core/TotalStatistics";
 import { BuildManager } from "../core/BuildFile/BuildManager";
+import { GroupedFx, PairedListItem } from "@/core/GroupedFx";
 
 type Listener = () => void;
 
@@ -39,6 +40,7 @@ export class DomainStore {
   private highlightedPower: PowerEntry | null = null;
   private cachedBasePower: IPower | null = null;
   private cachedEnhancedPower: IPower | null = null;
+  private cachedHighlightedPowerEffects: Array<{ key: GroupedFx; value: PairedListItem }> | null = null;
   private lastHighlightedPowerId: number = -1;
 
   constructor(database?: IDatabase, toon?: Toon) {
@@ -274,6 +276,7 @@ export class DomainStore {
     }
     this.highlightedPower = power;
     this.lastHighlightedPowerId = power.NIDPower;
+    this.cachedHighlightedPowerEffects = null;
     this.notify();
   }
 
@@ -312,6 +315,27 @@ export class DomainStore {
     this.cachedEnhancedPower = this.toon.GetEnhancedPower(power.Power);
     this.lastHighlightedPowerId = power.NIDPower;
     return this.cachedEnhancedPower;
+  }
+
+  getPowerEffects(power: PowerEntry | null): Array<{ key: GroupedFx; value: PairedListItem }> {
+    if (!power) {
+      return [];
+    }
+
+    const basePower = this.getBasePower();
+    if (!basePower) {
+      return [];
+    }
+
+    const enhancedPower = this.getEnhancedPower() ?? basePower;
+
+    const groupedRankedEffects = GroupedFx.AssembleGroupedEffects(enhancedPower ?? basePower ?? null);
+      
+    const rankedEffects = enhancedPower?.GetRankedEffects(true) ?? basePower?.GetRankedEffects(true) ?? [];
+      
+    const effectsItemPairs = GroupedFx.GenerateListItems(groupedRankedEffects, basePower, enhancedPower ?? basePower, rankedEffects, 10);
+
+    return effectsItemPairs;
   }
 
   getSpecialTypes(): TypeGrade[] {

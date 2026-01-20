@@ -1,5 +1,4 @@
 // Converted from C# CrypticReplTable.cs
-import fs from 'fs';
 import { AppDataPaths } from '../AppDataPaths';
 import { DatabaseAPI } from '../DatabaseAPI';
 
