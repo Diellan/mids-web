@@ -4,11 +4,13 @@ import { TabContext, TabList, TabPanel } from "@mui/lab";
 import { Box, Tab, Typography } from "@mui/material";
 import { useState, useMemo } from "react";
 import DataViewerInfo from "./info";
+import DataViewerEffects from "./effects";
 import DataViewerTotals from "./totals";
 import DataViewerEnhance from "./enhance";
 
 const DataViewer = () => {
   const highlightedPower = useDomainStore(store => store.getHighlightedPower());
+
   const [value, setValue] = useState('info');
   const domainStore = useDomainStoreInstance();
 
@@ -16,6 +18,16 @@ const DataViewer = () => {
     () => domainStore.getPowerEffects(highlightedPower),
     [highlightedPower, domainStore]
   );
+
+  if (!highlightedPower) {
+    return (
+      <Box sx={{ p: 2 }}>
+        <Typography variant="body2" color="text.secondary">
+          No power selected
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <TabContext value={value}>
@@ -28,40 +40,10 @@ const DataViewer = () => {
         </TabList>
       </Box>
       <TabPanel value="info">
-        {highlightedPower && <DataViewerInfo power={highlightedPower} />}
+        <DataViewerInfo power={highlightedPower} />
       </TabPanel>
       <TabPanel value="effects">
-        {effectsItemPairs.length > 0 ? (
-          <Box sx={{ p: 2 }}>
-            {effectsItemPairs.map((item, index) => (
-              <Box key={index} sx={{ mb: 1, p: 1, border: 1, borderColor: 'divider', borderRadius: 1 }}>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: item.value.UseUniqueColor
-                      ? 'primary.main'
-                      : item.value.UseAlternateColor
-                        ? 'secondary.main'
-                        : 'text.primary',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  {item.value.Name || 'Effect'}
-                </Typography>
-                <Typography variant="body2">{item.value.Value}</Typography>
-                {item.value.ToolTip && (
-                  <Typography variant="caption" color="text.secondary">
-                    {item.value.ToolTip}
-                  </Typography>
-                )}
-              </Box>
-            ))}
-          </Box>
-        ) : (
-          <Typography variant="body2" color="text.secondary">
-            No effects available
-          </Typography>
-        )}
+        <DataViewerEffects effectsItemPairs={effectsItemPairs} />
       </TabPanel>
       <TabPanel value="totals">
         <DataViewerTotals />

@@ -8,7 +8,7 @@ import { PowerEntry } from "../core/PowerEntry";
 import { IPower } from "../core/IPower";
 import { TypeGrade } from "../core/Utils/StructAndEnums";
 import { IEnhancement } from "../core/IEnhancement";
-import { eEnhGrade, eType, sEnhClass } from "../core/Enums";
+import { eEnhGrade, eEnhRelative, eType, sEnhClass } from "../core/Enums";
 import { EnhancementSetCollection } from "../core/EnhancementSetCollection";
 import { I9Slot } from "../core/I9Slot";
 import { SlotEntry } from "../core/SlotEntry";
@@ -386,7 +386,7 @@ export class DomainStore {
     const i9Slot = new I9Slot();
     i9Slot.Enh = enhancement.StaticIndex;
     i9Slot.Grade = grade;
-    i9Slot.RelativeLevel = 0;
+    i9Slot.RelativeLevel = eEnhRelative.Even;
     i9Slot.IOLevel = 0;
     power.Slots[slotIndex] = new SlotEntry();
     power.Slots[slotIndex].Enhancement = i9Slot;

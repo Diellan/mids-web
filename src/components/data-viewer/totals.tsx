@@ -18,7 +18,7 @@ const DataViewerTotals = () => {
 
       <Grid container spacing={2}>
         {/* Defense */}
-        <Grid item xs={12} md={6}>
+        <Grid xs={12} md={6}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" sx={{ mb: 1 }}>Defense</Typography>
             {damageTypes.map((damageType, index) => (
@@ -33,7 +33,7 @@ const DataViewerTotals = () => {
         </Grid>
 
         {/* Resistance */}
-        <Grid item xs={12} md={6}>
+        <Grid xs={12} md={6}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" sx={{ mb: 1 }}>Resistance</Typography>
             {damageTypes.map((damageType, index) => (
@@ -48,7 +48,7 @@ const DataViewerTotals = () => {
         </Grid>
 
         {/* Mez */}
-        <Grid item xs={12} md={6}>
+        <Grid xs={12} md={6}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" sx={{ mb: 1 }}>Mez</Typography>
             {mezTypes.map((mezType, index) => (
@@ -63,7 +63,7 @@ const DataViewerTotals = () => {
         </Grid>
 
         {/* Other Stats */}
-        <Grid item xs={12} md={6}>
+        <Grid xs={12} md={6}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" sx={{ mb: 1 }}>Other</Typography>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>

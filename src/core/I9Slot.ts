@@ -47,7 +47,7 @@ export class I9Slot {
           (sEffect.BuffMode === eBuffDebuff.DeBuffOnly && !(mag <= 0.0)) ||
           (sEffect.BuffMode === eBuffDebuff.BuffOnly && !(mag >= 0.0)) ||
           sEffect.Schedule === eSchedule.None ||
-          (sEffect.Enhance.ID as eEnhance) !== iEffect ||
+          sEffect.Enhance.ID !== iEffect ||
           (subEnh >= 0 && subEnh !== sEffect.Enhance.SubID)) {
         continue;
       }

@@ -744,9 +744,9 @@ export class Toon extends Character {
     }
 
     const basePower = DatabaseAPI.Database.Power[powerEntry.NIDPower];
-    const isAcc = basePower.IgnoreEnhancement(eEnhance.Accuracy);
-    const isRech = basePower.IgnoreEnhancement(eEnhance.RechargeTime);
-    const isEnd = basePower.IgnoreEnhancement(eEnhance.EnduranceDiscount);
+    const isAcc = !basePower.IgnoreEnhancement(eEnhance.Accuracy);
+    const isRech = !basePower.IgnoreEnhancement(eEnhance.RechargeTime);
+    const isEnd = !basePower.IgnoreEnhancement(eEnhance.EnduranceDiscount);
 
     const effectTypeCount = Object.keys(eEffectType).length / 2; // Approximate enum count
 
@@ -902,10 +902,10 @@ export class Toon extends Character {
     if (!powerEntry) return false;
     
     const basePower = DatabaseAPI.Database.Power[powerEntry.NIDPower];
-    const okAcc = basePower.IgnoreEnhancement(eEnhance.Accuracy);
-    const okRecharge = basePower.IgnoreEnhancement(eEnhance.RechargeTime);
-    const okEnd = basePower.IgnoreEnhancement(eEnhance.EnduranceDiscount);
-    
+    const okAcc = !basePower.IgnoreEnhancement(eEnhance.Accuracy);
+    const okRecharge = !basePower.IgnoreEnhancement(eEnhance.RechargeTime);
+    const okEnd = !basePower.IgnoreEnhancement(eEnhance.EnduranceDiscount);
+
     // Apply self-enhancement buffs
     for (let index1 = 0; index1 < this._selfEnhance.Effect.length; index1++) {
       const effectType = index1 as eEffectType;
@@ -1362,9 +1362,9 @@ export class Toon extends Character {
 
       if (effectType === eEffectType.Enhancement && 
           (effect1.EffectType === eEffectType.DamageBuff || effect1.EffectType === eEffectType.Enhancement)) {
-        const incAcc = powerMath.IgnoreEnhancement(eEnhance.Accuracy);
-        const incRech = powerMath.IgnoreEnhancement(eEnhance.RechargeTime);
-        const incEndDisc = powerMath.IgnoreEnhancement(eEnhance.EnduranceDiscount);
+        const incAcc = !powerMath.IgnoreEnhancement(eEnhance.Accuracy);
+        const incRech = !powerMath.IgnoreEnhancement(eEnhance.RechargeTime);
+        const incEndDisc = !powerMath.IgnoreEnhancement(eEnhance.EnduranceDiscount);
         
         if (effect1.ETModifies === eEffectType.Accuracy && incAcc) {
           powerMath.Accuracy += effect1.BuffedMag;
