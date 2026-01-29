@@ -15,7 +15,8 @@ import { SlotEntry } from "../core/SlotEntry";
 import { Build } from "../core/Build";
 import { TotalStatistics } from "../core/TotalStatistics";
 import { BuildManager } from "../core/BuildFile/BuildManager";
-import { GroupedFx, PairedListItem } from "@/core/GroupedFx";
+import { GroupedFx, PairedListItem } from "../core/GroupedFx";
+import { MidsContext } from "../core/Base/Master_Classes/MidsContext";
 
 type Listener = () => void;
 
@@ -58,6 +59,7 @@ export class DomainStore {
     this.lastArchetypeClassName = this.toon.Archetype?.ClassName ?? null;
     this.lastPoolGroup = this.toon.Archetype?.PoolGroup ?? null;
     this.cachedPowers = this.toon.CurrentBuild?.Powers ?? [];
+    MidsContext.Character = toon;
   }
 
   subscribe(listener: Listener): () => void {

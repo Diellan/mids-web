@@ -72,7 +72,7 @@ describe("Golden Mids build comparisons", async () => {
     expect(powerNames).toContain("Spectral Radial Flawless Interface");
   });
 
-  it("Fire/Fire Blaster matches golden totals", async () => {
+  it("matches golden totals", async () => {
     // (a) database is already loaded
     const db = DatabaseAPI.Database;
 

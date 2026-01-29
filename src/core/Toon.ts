@@ -1422,7 +1422,7 @@ export class Toon extends Character {
 
     // Pass 2: calc GCM flags scale (from source incarnate power only)
     for (const flag of gcmFlags) {
-      if (MidsContext.Character?.ModifyEffects?.has(flag)) {
+      if (this.ModifyEffects?.has(flag)) {
         continue;
       }
 
@@ -1430,7 +1430,7 @@ export class Toon extends Character {
         .filter(e => e.Reward === flag)
         .reduce((sum, e) => sum + e.Scale, 0);
 
-      MidsContext.Character?.ModifyEffects?.set(flag, scale);
+      this.ModifyEffects?.set(flag, scale);
     }
 
     // Pass 3: recalculate probabilities
@@ -1635,7 +1635,7 @@ export class Toon extends Character {
       fx.EffectType === eEffectType.DamageBuff || fx.EffectType === eEffectType.Enhancement;
 
     const IsGlobalAccuracySource = (src: IPower): boolean =>
-      src === MidsContext.Character?.CurrentBuild?.SetBonusVirtualPower ||
+      src === this.CurrentBuild?.SetBonusVirtualPower ||
       src.PowerType === ePowerType.GlobalBoost;
 
     const shortFx = new ShortFXImpl(); // main per-effect-type accumulator
@@ -1838,7 +1838,7 @@ export class Toon extends Character {
 
         // Normalize Absorb from % to flat HP when needed
         if (effIndex === eStatType.Absorb && fx.DisplayPercentage) {
-          value *= (MidsContext.Character?.Totals.HPMax ?? 0);
+          value *= (this.Totals.HPMax ?? 0);
         }
 
         nBuffs.Effect[effIndex] += value;
@@ -2037,9 +2037,9 @@ export class Toon extends Character {
         }
         this.RemoveGrantEffectIndirect(this._mathPowers, p, gFx.Summon);
         
-        if (!MidsContext.Character?.CurrentBuild?.Powers) continue;
+        if (!this.CurrentBuild?.Powers) continue;
 
-        const buildPowerPicked = MidsContext.Character.CurrentBuild.Powers.filter(pe => pe?.Power != null);
+        const buildPowerPicked = this.CurrentBuild.Powers.filter(pe => pe?.Power != null);
         const buildPowerIdx = buildPowerPicked.findIndex(pe => pe?.Power?.FullName === p.FullName);
         if (buildPowerIdx < 0) continue;
 
