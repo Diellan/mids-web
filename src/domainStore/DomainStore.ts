@@ -1,3 +1,5 @@
+import { createStore, type StoreApi } from 'zustand/vanilla';
+import { devtools } from 'zustand/middleware';
 import { Archetype } from "../core/Base/Data_Classes/Archetype";
 import { DatabaseAPI } from "../core/DatabaseAPI";
 import { IDatabase } from "../core/IDatabase";
@@ -8,403 +10,356 @@ import { PowerEntry } from "../core/PowerEntry";
 import { IPower } from "../core/IPower";
 import { TypeGrade } from "../core/Utils/StructAndEnums";
 import { IEnhancement } from "../core/IEnhancement";
-import { eEnhGrade, eEnhRelative, eType, sEnhClass } from "../core/Enums";
+import { eEnhGrade, eEnhRelative } from "../core/Enums";
 import { EnhancementSetCollection } from "../core/EnhancementSetCollection";
 import { I9Slot } from "../core/I9Slot";
 import { SlotEntry } from "../core/SlotEntry";
-import { Build } from "../core/Build";
 import { TotalStatistics } from "../core/TotalStatistics";
 import { BuildManager } from "../core/BuildFile/BuildManager";
 import { GroupedFx, PairedListItem } from "../core/GroupedFx";
 import { MidsContext } from "../core/Base/Master_Classes/MidsContext";
+import { I9SetData } from "@/core/I9SetData";
+import { IEffect } from "@/core/IEffect";
 
-type Listener = () => void;
+export interface DomainStoreState {
+  /** Internal version counter - incremented on every mutation to trigger re-renders */
+  _version: number;
+  toon: Toon;
+  database: IDatabase;
+  highlightedPower: PowerEntry | null;
 
-export class DomainStore {
-  private listeners = new Set<Listener>();
+  // Derived state (eagerly computed on mutations, replacing closure caches)
+  powers: (PowerEntry | null)[];
+  primaryOptions: IPowerset[];
+  secondaryOptions: IPowerset[];
+  poolOptions: IPowerset[];
+  epicOptions: IPowerset[];
+  archetypeOptions: Archetype[];
+  originOptions: Origin[];
+  basePower: IPower | null;
+  enhancedPower: IPower | null;
 
-  private database: IDatabase;
-  private toon: Toon;
+  // Character
+  getCharacterName: () => string;
+  setCharacterName: (name: string) => void;
+  getCharacterArchetype: () => Archetype | null;
+  setCharacterArchetype: (archetype: Archetype) => void;
+  getCharacterOrigin: () => Origin | null;
+  setCharacterOrigin: (origin: Origin) => void;
 
-  // Cache for computed arrays to prevent infinite re-renders
-  private cachedPrimaryOptions: IPowerset[] | null = null;
-  private cachedSecondaryOptions: IPowerset[] | null = null;
-  private cachedPoolOptions: IPowerset[] | null = null;
-  private cachedEpicOptions: IPowerset[] | null = null;
-  private cachedArchetypeOptions: Archetype[] | null = null;
-  private cachedOriginOptions: Origin[] | null = null;
-  private cachedPowers: (PowerEntry | null)[] | null = null;
-  private cachedPowersLength: number = -1; // Track array length to detect changes
-  private originalPowersRef: (PowerEntry | null)[] | null = null; // Track original array reference
-  private lastArchetypeClassName: string | null = null;
-  private lastPoolGroup: string | null = null;
-  private highlightedPower: PowerEntry | null = null;
-  private cachedBasePower: IPower | null = null;
-  private cachedEnhancedPower: IPower | null = null;
-  private cachedHighlightedPowerEffects: Array<{ key: GroupedFx; value: PairedListItem }> | null = null;
-  private lastHighlightedPowerId: number = -1;
+  // Powersets
+  getPowersetByIndex: (index: number) => IPowerset | null;
+  setPowerset: (powersetName: string, index: number) => void;
+  getPrimaryPowerSetOptions: () => IPowerset[];
+  getSecondaryPowerSetOptions: () => IPowerset[];
+  getPowerPoolOptions: () => IPowerset[];
+  getEpicPoolOptions: () => IPowerset[];
+  getArchetypeOptions: () => Archetype[];
+  getOriginOptions: () => Origin[];
 
-  constructor(database?: IDatabase, toon?: Toon) {
-    if (!database) {
-      database = DatabaseAPI.Database;
-    }
+  // Powers
+  getPowers: () => (PowerEntry | null)[];
+  getPowerEntryById: (id: string) => PowerEntry | null;
+  togglePower: (power: IPower) => void;
+  getHighlightedPower: () => PowerEntry | null;
+  setHighlightedPower: (power: PowerEntry) => void;
+  getBasePower: () => IPower | null;
+  getEnhancedPower: () => IPower | null;
+  getPowerEffects: (power: PowerEntry | null) => Array<{ key: GroupedFx; value: PairedListItem }>;
 
-    if (!toon) {
-      toon = new Toon(database?.Classes[0]);
-    }
-    this.database = database;
-    this.toon = toon;
-    
-    // Initialize caches on construction
-    this.lastArchetypeClassName = this.toon.Archetype?.ClassName ?? null;
-    this.lastPoolGroup = this.toon.Archetype?.PoolGroup ?? null;
-    this.cachedPowers = this.toon.CurrentBuild?.Powers ?? [];
-    MidsContext.Character = toon;
-  }
+  // Enhancements
+  getSpecialTypes: () => TypeGrade[];
+  getEnhancement: (enhancementId: number) => IEnhancement;
+  getEnhancementImagePath: (enhancementId: number) => string;
+  getSetType: (setTypeId: number) => TypeGrade;
+  getEnhancementSetsByTypeId: (setTypeId: number) => EnhancementSetCollection;
+  pickEnhancement: (enhancementIndex: number, grade: eEnhGrade, powerEntryId: string, slotIndex: number) => void;
 
-  subscribe(listener: Listener): () => void {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
-  }
+  // Slots
+  canPlaceSlot: () => boolean;
+  addSlot: (powerEntryId: string) => void;
 
-  notify() {
-    this.toon.GenerateBuffedPowerArray();
-    // Clear enhanced power cache when buffed powers are regenerated
-    // Base power cache is only cleared when highlighted power changes
-    this.cachedEnhancedPower = null;
-    for (const l of this.listeners) l();
-  }
+  // Statistics
+  getTotalStatistics: () => TotalStatistics;
+  getSetBonuses: () => I9SetData[];
+  getSetBonusPower: () => IPower | null;
+  getCumulativeSetBonuses: () => IEffect[];
 
-  async loadBuildFile(buildFile: string) {
-    this.toon = await BuildManager.Instance.LoadFromFile(buildFile);
-    this.notify();
-  }
+  // Async
+  loadBuildFile: (buildFile: string) => Promise<void>;
+}
 
-  getCharacterName(): string {
-    return this.toon.Name;
-  }
+export type DomainStoreApi = StoreApi<DomainStoreState>;
 
-  setCharacterName(name: string) {
-    if (this.toon.Name === name) {
-      return;
-    }
+// --- Derived state computation helpers ---
 
-    this.toon.Name = name;
-    this.notify();
-  }
+function computePowers(toon: Toon): (PowerEntry | null)[] {
+  return toon.CurrentBuild?.Powers ? [...toon.CurrentBuild.Powers] : [];
+}
 
-  getCharacterArchetype(): Archetype | null {
-    return this.toon.Archetype;
-  }
+function computePrimaryOptions(toon: Toon, db: IDatabase): IPowerset[] {
+  if (!toon.Archetype) return [];
+  return toon.Archetype.Primary.map(i => db.Powersets[i]).filter(Boolean);
+}
 
-  setCharacterArchetype(archetype: Archetype) {
-    if (this.toon.Archetype?.ClassName === archetype.ClassName) {
-      return;
-    }
+function computeSecondaryOptions(toon: Toon, db: IDatabase): IPowerset[] {
+  if (!toon.Archetype) return [];
+  return toon.Archetype.Secondary.map(i => db.Powersets[i]).filter(Boolean);
+}
 
-    this.toon.Reset(archetype);
-    // Clear caches when archetype changes
-    this.cachedPrimaryOptions = null;
-    this.cachedSecondaryOptions = null;
-    this.cachedPoolOptions = null;
-    this.cachedEpicOptions = null;
-    this.cachedPowers = null;
-    this.lastArchetypeClassName = archetype.ClassName;
-    this.lastPoolGroup = archetype.PoolGroup ?? null;
-    this.notify();
-  }
+function computePoolOptions(toon: Toon, db: IDatabase): IPowerset[] {
+  if (!toon.Archetype) return [];
+  const poolGroup = toon.Archetype.PoolGroup ?? '';
+  return DatabaseAPI.GetPowersetIndexesByGroupName(poolGroup)
+    .map(i => db.Powersets[i]).filter(Boolean);
+}
 
-  getCharacterOrigin(): Origin | null {
-    return this.database.Origins[this.toon.Origin];
-  }
+function computeEpicOptions(toon: Toon, db: IDatabase): IPowerset[] {
+  if (!toon.Archetype) return [];
+  return toon.Archetype.Ancillary.map(i => db.Powersets[i]).filter(Boolean);
+}
 
-  setCharacterOrigin(origin: Origin) {
-    if (this.toon.Origin === this.database.Origins.findIndex(o => o.Name === origin.Name)) {
-      return;
-    }
+function computeBasePower(toon: Toon, highlightedPower: PowerEntry | null): IPower | null {
+  if (!highlightedPower) return null;
+  const powerIndex = toon.CurrentBuild?.Powers.findIndex(e => e.Power === highlightedPower.Power) ?? -1;
+  return toon.GetBasePower(powerIndex, highlightedPower.NIDPower);
+}
 
-    this.toon.Origin = this.database.Origins.findIndex(o => o.Name === origin.Name);
-    this.notify();
-  }
+function computeEnhancedPower(toon: Toon, highlightedPower: PowerEntry | null): IPower | null {
+  if (!highlightedPower) return null;
+  return toon.GetEnhancedPower(highlightedPower.Power);
+}
 
-  getPowersetByIndex(index: number): IPowerset | null {
-    // Index refers to the toon's Powersets array (0=Primary, 1=Secondary, 3-6=Pools, 7=Epic)
-    // not the database's Powersets array
-    return this.toon.Powersets[index] ?? null;
-  }
+function computeAllPowersetOptions(toon: Toon, db: IDatabase) {
+  return {
+    primaryOptions: computePrimaryOptions(toon, db),
+    secondaryOptions: computeSecondaryOptions(toon, db),
+    poolOptions: computePoolOptions(toon, db),
+    epicOptions: computeEpicOptions(toon, db),
+  };
+}
 
-  setPowerset(powersetName: string, index: number) {
-    if (this.toon.Powersets[index]?.SetName === powersetName) {
-      return;
-    }
+export function createDomainStore(database?: IDatabase, toon?: Toon): DomainStoreApi {
+  const db = database ?? DatabaseAPI.Database;
+  const initialToon = toon ?? new Toon(db?.Classes[0]);
 
-    const powerset = this.database.Powersets.find(p => p.SetName === powersetName);
-    if (!powerset) {
-      throw new Error('Powerset not found');
-    }
+  MidsContext.Character = initialToon;
+  MidsContext.Archetype = initialToon.Archetype;
+  MidsContext.Build = initialToon.CurrentBuild;
 
-    if (index < 2 && this.toon.Powersets[index]) {
-      this.toon.SwitchSets(powerset, this.toon.Powersets[index]);
-    }
+  // Pre-compute initial derived state
+  const initialPowers = computePowers(initialToon);
+  const initialPowersetOptions = computeAllPowersetOptions(initialToon, db);
+  const initialArchetypeOptions = db.Classes.filter(at => at.Playable);
+  const initialOriginOptions = db.Origins;
 
-    this.toon.Powersets[index] = powerset;
-    this.toon.Validate();
-    this.cachedPowers = null;
-    this.cachedPowersLength = -1;
-    this.originalPowersRef = null;
-    this.notify();
-  }
+  return createStore<DomainStoreState>()(
+    devtools(
+      (set, get) => {
+        const notify = (action?: string, extraState?: Partial<DomainStoreState>) => {
+          const state = get();
+          const toon = extraState?.toon ?? state.toon;
+          toon.GenerateBuffedPowerArray();
+          const hp = extraState && 'highlightedPower' in extraState
+            ? extraState.highlightedPower
+            : state.highlightedPower;
 
-  getPowers(): (PowerEntry | null)[] {
-    // Return a shallow copy to ensure useSyncExternalStore detects changes
-    // when BuildPower modifies the array contents
-    const currentPowers = this.toon.CurrentBuild?.Powers;
-    if (currentPowers) {
-      // Check if the array reference or length has changed
-      const currentLength = currentPowers.length;
-      // If the original array reference changed OR the length changed, create a new copy
-      if (!this.cachedPowers || 
-          this.originalPowersRef !== currentPowers || 
-          this.cachedPowersLength !== currentLength) {
-        // Array has changed - create a new shallow copy
-        // This ensures useSyncExternalStore detects the change
-        this.cachedPowers = [...currentPowers];
-        this.cachedPowersLength = currentLength;
-        this.originalPowersRef = currentPowers;
-      }
-      return this.cachedPowers;
-    }
-    // Return empty array - create once and reuse
-    if (!this.cachedPowers || this.cachedPowers.length > 0) {
-      this.cachedPowers = [];
-      this.cachedPowersLength = 0;
-      this.originalPowersRef = null;
-    }
-    return this.cachedPowers;
-  }
+          set(s => ({
+            ...extraState,
+            _version: s._version + 1,
+            powers: computePowers(toon),
+            basePower: computeBasePower(toon, hp ?? null),
+            enhancedPower: computeEnhancedPower(toon, hp ?? null),
+          }), false, action);
+        };
 
-  getPowerEntryById(id: string): PowerEntry | null {
-    const powerEntry = this.getPowers().find(p => p && p.id === id) ?? null;
-    return powerEntry;
-  }
+        return {
+          _version: 0,
+          toon: initialToon,
+          database: db,
+          highlightedPower: null,
 
-  togglePower(power: IPower) {
-    this.toon.BuildPower(power.PowerSetID, power.PowerIndex);
-    // Clear powers cache when build changes - getPowers will create a new copy
-    // This ensures useSyncExternalStore detects the change
-    this.cachedPowers = null;
-    this.cachedPowersLength = -1;
-    this.originalPowersRef = null;
-    this.notify();
-  }
+          // Derived state
+          powers: initialPowers,
+          primaryOptions: initialPowersetOptions.primaryOptions,
+          secondaryOptions: initialPowersetOptions.secondaryOptions,
+          poolOptions: initialPowersetOptions.poolOptions,
+          epicOptions: initialPowersetOptions.epicOptions,
+          archetypeOptions: initialArchetypeOptions,
+          originOptions: initialOriginOptions,
+          basePower: null,
+          enhancedPower: null,
 
-  getPrimaryPowerSetOptions(): IPowerset[] {
-    const currentClassName = this.toon.Archetype?.ClassName ?? null;
-    if (this.cachedPrimaryOptions && currentClassName === this.lastArchetypeClassName && currentClassName !== null) {
-      return this.cachedPrimaryOptions;
-    }
-    if (!this.toon.Archetype) {
-      return this.cachedPrimaryOptions ?? [];
-    }
-    this.cachedPrimaryOptions = this.toon.Archetype.Primary.map(index => this.database.Powersets[index]).filter(Boolean) ?? [];
-    this.lastArchetypeClassName = currentClassName;
-    return this.cachedPrimaryOptions;
-  }
+          // --- Character ---
 
-  getSecondaryPowerSetOptions(): IPowerset[] {
-    const currentClassName = this.toon.Archetype?.ClassName ?? null;
-    if (this.cachedSecondaryOptions && currentClassName === this.lastArchetypeClassName && currentClassName !== null) {
-      return this.cachedSecondaryOptions;
-    }
-    if (!this.toon.Archetype) {
-      return this.cachedSecondaryOptions ?? [];
-    }
-    this.cachedSecondaryOptions = this.toon.Archetype.Secondary.map(index => this.database.Powersets[index]).filter(Boolean) ?? [];
-    this.lastArchetypeClassName = currentClassName;
-    return this.cachedSecondaryOptions;
-  }
+          getCharacterName: () => get().toon.Name,
 
-  getPowerPoolOptions(): IPowerset[] {
-    const currentPoolGroup = this.toon.Archetype?.PoolGroup ?? '';
-    if (this.cachedPoolOptions && currentPoolGroup === this.lastPoolGroup && currentPoolGroup !== '') {
-      return this.cachedPoolOptions;
-    }
-    if (!this.toon.Archetype) {
-      return this.cachedPoolOptions ?? [];
-    }
-    this.cachedPoolOptions = DatabaseAPI.GetPowersetIndexesByGroupName(currentPoolGroup).map(index => this.database.Powersets[index]).filter(Boolean) ?? [];
-    this.lastPoolGroup = currentPoolGroup;
-    return this.cachedPoolOptions;
-  }
+          setCharacterName: (name: string) => {
+            const { toon } = get();
+            if (toon.Name === name) return;
+            toon.Name = name;
+            notify('setCharacterName');
+          },
 
-  getEpicPoolOptions(): IPowerset[] {
-    const currentClassName = this.toon.Archetype?.ClassName ?? null;
-    if (this.cachedEpicOptions && currentClassName === this.lastArchetypeClassName && currentClassName !== null) {
-      return this.cachedEpicOptions;
-    }
-    if (!this.toon.Archetype) {
-      return this.cachedEpicOptions ?? [];
-    }
-    this.cachedEpicOptions = this.toon.Archetype.Ancillary.map(index => this.database.Powersets[index]).filter(Boolean) ?? [];
-    this.lastArchetypeClassName = currentClassName;
-    return this.cachedEpicOptions;
-  }
+          getCharacterArchetype: () => get().toon.Archetype,
 
-  getArchetypeOptions(): Archetype[] {
-    if (this.cachedArchetypeOptions) {
-      return this.cachedArchetypeOptions;
-    }
-    this.cachedArchetypeOptions = this.database.Classes.filter(at => at.Playable);
-    return this.cachedArchetypeOptions;
-  }
+          setCharacterArchetype: (archetype: Archetype) => {
+            const { toon, database } = get();
+            if (toon.Archetype?.ClassName === archetype.ClassName) return;
+            toon.Reset(archetype);
+            notify('setCharacterArchetype', computeAllPowersetOptions(toon, database));
+          },
 
-  getOriginOptions(): Origin[] {
-    if (this.cachedOriginOptions) {
-      return this.cachedOriginOptions;
-    }
-    this.cachedOriginOptions = this.database.Origins;
-    return this.cachedOriginOptions;
-  }
+          getCharacterOrigin: () => {
+            const { toon, database } = get();
+            return database.Origins[toon.Origin];
+          },
 
-  getHighlightedPower(): PowerEntry | null {
-    return this.highlightedPower;
-  }
+          setCharacterOrigin: (origin: Origin) => {
+            const { toon, database } = get();
+            const newIndex = database.Origins.findIndex(o => o.Name === origin.Name);
+            if (toon.Origin === newIndex) return;
+            toon.Origin = newIndex;
+            notify('setCharacterOrigin');
+          },
 
-  setHighlightedPower(power: PowerEntry) {
-    // Clear cache if power changed
-    if (this.highlightedPower?.NIDPower !== power.NIDPower) {
-      this.cachedBasePower = null;
-      this.cachedEnhancedPower = null;
-    }
-    this.highlightedPower = power;
-    this.lastHighlightedPowerId = power.NIDPower;
-    this.cachedHighlightedPowerEffects = null;
-    this.notify();
-  }
+          // --- Powersets ---
 
-  getBasePower(): IPower | null {
-    const power = this.highlightedPower;
-    if (!power) {
-      this.cachedBasePower = null;
-      this.lastHighlightedPowerId = -1;
-      return null;
-    }
-    
-    // Cache based on highlighted power ID
-    if (this.cachedBasePower && this.lastHighlightedPowerId === power.NIDPower) {
-      return this.cachedBasePower;
-    }
-    
-    const powerIndex = this.toon.CurrentBuild?.Powers.findIndex(e => e.Power === power.Power) ?? -1;
-    this.cachedBasePower = this.toon.GetBasePower(powerIndex, power.NIDPower);
-    this.lastHighlightedPowerId = power.NIDPower;
-    return this.cachedBasePower;
-  }
+          getPowersetByIndex: (index: number) => get().toon.Powersets[index] ?? null,
 
-  getEnhancedPower(): IPower | null {
-    const power = this.highlightedPower;
-    if (!power) {
-      this.cachedEnhancedPower = null;
-      this.lastHighlightedPowerId = -1;
-      return null;
-    }
-    
-    // Cache based on highlighted power ID
-    if (this.cachedEnhancedPower && this.lastHighlightedPowerId === power.NIDPower) {
-      return this.cachedEnhancedPower;
-    }
-    
-    this.cachedEnhancedPower = this.toon.GetEnhancedPower(power.Power);
-    this.lastHighlightedPowerId = power.NIDPower;
-    return this.cachedEnhancedPower;
-  }
+          setPowerset: (powersetName: string, index: number) => {
+            const { toon, database } = get();
+            if (toon.Powersets[index]?.SetName === powersetName) return;
+            const powerset = database.Powersets.find(p => p.SetName === powersetName);
+            if (!powerset) throw new Error('Powerset not found');
+            if (index < 2 && toon.Powersets[index]) {
+              toon.SwitchSets(powerset, toon.Powersets[index]);
+            }
+            toon.Powersets[index] = powerset;
+            toon.Validate();
+            notify('setPowerset');
+          },
 
-  getPowerEffects(power: PowerEntry | null): Array<{ key: GroupedFx; value: PairedListItem }> {
-    if (!power) {
-      return [];
-    }
+          getPrimaryPowerSetOptions: () => get().primaryOptions,
+          getSecondaryPowerSetOptions: () => get().secondaryOptions,
+          getPowerPoolOptions: () => get().poolOptions,
+          getEpicPoolOptions: () => get().epicOptions,
+          getArchetypeOptions: () => get().archetypeOptions,
+          getOriginOptions: () => get().originOptions,
 
-    const basePower = this.getBasePower();
-    if (!basePower) {
-      return [];
-    }
+          // --- Powers ---
 
-    const enhancedPower = this.getEnhancedPower() ?? basePower;
+          getPowers: () => get().powers,
 
-    const groupedRankedEffects = GroupedFx.AssembleGroupedEffects(enhancedPower ?? basePower ?? null);
-      
-    const rankedEffects = enhancedPower?.GetRankedEffects(true) ?? basePower?.GetRankedEffects(true) ?? [];
-      
-    const effectsItemPairs = GroupedFx.GenerateListItems(groupedRankedEffects, basePower, enhancedPower ?? basePower, rankedEffects, 10);
+          getPowerEntryById: (id: string) => {
+            return get().powers.find(p => p && p.id === id) ?? null;
+          },
 
-    return effectsItemPairs;
-  }
+          togglePower: (power: IPower) => {
+            get().toon.BuildPower(power.PowerSetID, power.PowerIndex);
+            notify('togglePower');
+          },
 
-  getSpecialTypes(): TypeGrade[] {
-    return this.database.SpecialEnhancements;
-  }
+          getHighlightedPower: () => get().highlightedPower,
 
-  getEnhancement(enhancementId: number): IEnhancement {
-    return this.database.Enhancements[enhancementId];
-  }
+          setHighlightedPower: (power: PowerEntry) => {
+            notify('setHighlightedPower', { highlightedPower: power });
+          },
 
-  getEnhancementImagePath(enhancementId: number): string {
-    const enhancement = this.database.Enhancements[enhancementId];
-    if (!enhancement) {
-      return '/src/assets/Sets/None.png';
-    }
+          getBasePower: () => get().basePower,
 
-    if (enhancement.Image.indexOf('/') !== -1) {
-      return `/src/assets/${enhancement.Image}`;
-    }
+          getEnhancedPower: () => get().enhancedPower,
 
-    return `/src/assets/Enhancements/${enhancement.Image}`;
-  }
+          getPowerEffects: (power: PowerEntry | null) => {
+            if (!power) return [];
+            const basePower = get().basePower;
+            if (!basePower) return [];
+            const enhancedPower = get().enhancedPower ?? basePower;
+            const groupedRankedEffects = GroupedFx.AssembleGroupedEffects(enhancedPower ?? basePower ?? null);
+            const rankedEffects = enhancedPower?.GetRankedEffects(true) ?? basePower?.GetRankedEffects(true) ?? [];
+            return GroupedFx.GenerateListItems(groupedRankedEffects, basePower, enhancedPower ?? basePower, rankedEffects, 10);
+          },
 
-  getSetType(setTypeId: number): TypeGrade {
-    return this.database.SetTypes[setTypeId];
-  }
+          // --- Enhancements ---
 
-  getEnhancementSetsByTypeId(setTypeId: number): EnhancementSetCollection {
-    return this.database.EnhancementSets.filter(set => set.SetType === setTypeId) as EnhancementSetCollection;
-  }
+          getSpecialTypes: () => get().database.SpecialEnhancements,
 
-  pickEnhancement(enhancementIndex: number, grade: eEnhGrade, powerEntryId: string, slotIndex: number) {
-    console.debug(`Picking enhancement ${enhancementIndex} (grade ${eEnhGrade[grade]}) for power index ${powerEntryId}, slot index ${slotIndex}`);
-    const enhancement = this.database.Enhancements[enhancementIndex];
-    if (!enhancement) {
-      throw new Error('Enhancement not found');
-    }
+          getEnhancement: (enhancementId: number) => get().database.Enhancements[enhancementId],
 
-    if (!this.toon.CurrentBuild?.EnhancementTest(slotIndex, powerEntryId, enhancement.StaticIndex)) {
-      throw new Error('Enhancement test failed');
-    }
+          getEnhancementImagePath: (enhancementId: number) => {
+            const enhancement = get().database.Enhancements[enhancementId];
+            if (!enhancement) return '/src/assets/Sets/None.png';
+            if (enhancement.Image.indexOf('/') !== -1) return `/src/assets/${enhancement.Image}`;
+            return `/src/assets/Enhancements/${enhancement.Image}`;
+          },
 
-    const power = this.toon.CurrentBuild?.Powers.find(p => p && p.id === powerEntryId);
-    if (!power) {
-      throw new Error('Power not found');
-    }
+          getSetType: (setTypeId: number) => get().database.SetTypes[setTypeId],
 
-    const i9Slot = new I9Slot();
-    i9Slot.Enh = enhancement.StaticIndex;
-    i9Slot.Grade = grade;
-    i9Slot.RelativeLevel = eEnhRelative.Even;
-    i9Slot.IOLevel = 0;
-    power.Slots[slotIndex] = new SlotEntry();
-    power.Slots[slotIndex].Enhancement = i9Slot;
-    this.notify();
-  }
+          getEnhancementSetsByTypeId: (setTypeId: number) => {
+            return get().database.EnhancementSets.filter(s => s.SetType === setTypeId) as EnhancementSetCollection;
+          },
 
-  canPlaceSlot(): boolean {
-    return this.toon.CanPlaceSlot;
-  }
+          pickEnhancement: (enhancementIndex: number, grade: eEnhGrade, powerEntryId: string, slotIndex: number) => {
+            const { toon, database } = get();
+            console.debug(`Picking enhancement ${enhancementIndex} (grade ${eEnhGrade[grade]}) for power index ${powerEntryId}, slot index ${slotIndex}`);
+            const enhancement = database.Enhancements[enhancementIndex];
+            if (!enhancement) throw new Error('Enhancement not found');
+            if (!toon.CurrentBuild?.EnhancementTest(slotIndex, powerEntryId, enhancement.StaticIndex)) {
+              throw new Error('Enhancement test failed');
+            }
+            const power = toon.CurrentBuild?.Powers.find(p => p && p.id === powerEntryId);
+            if (!power) throw new Error('Power not found');
+            const i9Slot = new I9Slot();
+            i9Slot.Enh = enhancement.StaticIndex;
+            i9Slot.Grade = grade;
+            i9Slot.RelativeLevel = eEnhRelative.Even;
+            i9Slot.IOLevel = 0;
+            power.Slots[slotIndex] = new SlotEntry();
+            power.Slots[slotIndex].Enhancement = i9Slot;
+            notify('pickEnhancement');
+          },
 
-  addSlot(powerEntryId: string) {    
-    this.toon.BuildSlot(powerEntryId);
-    this.notify();
-  }
+          // --- Slots ---
 
-  getTotalStatistics(): TotalStatistics {
-    return this.toon.Totals;
-  }
+          canPlaceSlot: () => get().toon.CanPlaceSlot,
+
+          addSlot: (powerEntryId: string) => {
+            get().toon.BuildSlot(powerEntryId);
+            notify('addSlot');
+          },
+
+          // --- Statistics ---
+
+          getTotalStatistics: () => get().toon.Totals,
+
+          getSetBonuses: () => get().toon.CurrentBuild?.SetBonuses ?? [],
+
+          getSetBonusPower: () => get().toon.CurrentBuild?.SetBonusVirtualPower ?? null,
+
+          getCumulativeSetBonuses: () => get().toon.CurrentBuild?.GetCumulativeSetBonuses() ?? [],
+
+          // --- Async ---
+
+          loadBuildFile: async (buildFile: string) => {
+            const { database } = get();
+            const newToon = await BuildManager.Instance.LoadFromFile(buildFile);
+            MidsContext.Character = newToon;
+            MidsContext.Archetype = newToon.Archetype;
+            MidsContext.Build = newToon.CurrentBuild;
+            newToon.GenerateBuffedPowerArray();
+            set(s => ({
+              toon: newToon,
+              _version: s._version + 1,
+              highlightedPower: null,
+              powers: computePowers(newToon),
+              basePower: null,
+              enhancedPower: null,
+              ...computeAllPowersetOptions(newToon, database),
+            }), false, 'loadBuildFile');
+          },
+        };
+      },
+      { name: 'DomainStore' }
+    )
+  );
 }

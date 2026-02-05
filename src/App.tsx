@@ -5,11 +5,11 @@ import midsTheme from './midsTheme';
 import { DatabaseAPI } from './core/DatabaseAPI';
 import { ServerData } from './core/ServerData';
 import MidsBuilder from './components/MidsBuilder';
-import { DomainStore } from './domainStore/DomainStore';
+import { createDomainStore, type DomainStoreApi } from './domainStore/DomainStore';
 import { DomainStoreContext } from './domainStore/domainStoreContext';
 
 function App() {
-  const [domainStore, setDomainStore] = useState<DomainStore | null>(null);
+  const [domainStore, setDomainStore] = useState<DomainStoreApi | null>(null);
   const hasLoadedRef = useRef(false);
 
   useEffect(() => {
@@ -23,7 +23,7 @@ function App() {
       console.log('Server data loaded successfully');
       console.log(ServerData.Instance);
       console.log(DatabaseAPI.Database);
-      const newDomainStore = new DomainStore(DatabaseAPI.Database);
+      const newDomainStore = createDomainStore(DatabaseAPI.Database);
       setDomainStore(newDomainStore);
       (window as any).domainStore = newDomainStore;
     }).catch(error => {

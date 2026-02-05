@@ -1,11 +1,13 @@
 import { describe, it, beforeAll, expect, vi } from "vitest";
 import { DatabaseAPI } from "../src/core/DatabaseAPI";
-import { DomainStore } from "../src/domainStore/DomainStore";
+import { createDomainStore } from "../src/domainStore/DomainStore";
 
 import { loadGoldenResult } from "./helpers/loadGoldenResult";
 
 import path from 'node:path'
 import fs from 'node:fs/promises'
+import { PowerEntry } from "../src/core/PowerEntry";
+import { GroupedFx } from "../src/core/GroupedFx";
 
 global.fetch = vi.fn(async (url: URL | RequestInfo) => {
   if (typeof url !== "string") {
@@ -45,7 +47,7 @@ describe("Golden Mids build comparisons", async () => {
     const buildFile = "test-data/builds/Lorenzo (Electrical Melee - Shield Defense).mbd";
 
     // (c) create store & trigger calculations
-    const store = new DomainStore(db);
+    const store = createDomainStore(db).getState();
 
     await store.loadBuildFile(buildFile);
     expect(store.getCharacterName()).toBe("Lorenzo Mondavi");
@@ -72,6 +74,133 @@ describe("Golden Mids build comparisons", async () => {
     expect(powerNames).toContain("Spectral Radial Flawless Interface");
   });
 
+  it("matches cumulative set bonus totals", async () => {
+    // (a) database is already loaded
+    const db = DatabaseAPI.Database;
+
+    // (b) load a Mids build (export string / file / JSON)
+    const buildFile = "test-data/builds/Lorenzo (Electrical Melee - Shield Defense) - all off.mbd";
+
+    // (c) create store & trigger calculations
+    const store = createDomainStore(db).getState();
+
+    await store.loadBuildFile(buildFile);
+    expect(store.getCharacterName()).toBe("Lorenzo Mondavi");
+    
+    // Force any lazy computation paths if needed
+    const setBonuses = store.getCumulativeSetBonuses()
+      .sort((a, b) => a.CompareTo(b))
+      .map(b => b.BuildEffectString(true, "", false, false, false, true));
+
+    expect(setBonuses).not.toBeNull();
+    const expected = loadGoldenResult(
+      "test/test-data/golden/electrical_melee_shield_defense_brute_all_off_set_bonuses.json"
+    );
+
+    expect(setBonuses).toEqual(expected);
+  });
+
+  it("matches full set bonuses", async () => {
+    // (a) database is already loaded
+    const db = DatabaseAPI.Database;
+
+    // (b) load a Mids build (export string / file / JSON)
+    const buildFile = "test-data/builds/Lorenzo (Electrical Melee - Shield Defense) - all off.mbd";
+
+    // (c) create store & trigger calculations
+    const store = createDomainStore(db).getState();
+
+    await store.loadBuildFile(buildFile);
+    expect(store.getCharacterName()).toBe("Lorenzo Mondavi");
+    
+    // Force any lazy computation paths if needed
+    const setBonuses = store.getCumulativeSetBonuses()
+      .sort((a, b) => a.CompareTo(b))
+      .map(b => b.BuildEffectString(true, "", false, false, false, true));
+
+    expect(setBonuses).not.toBeNull();
+    const expected = loadGoldenResult(
+      "test/test-data/golden/electrical_melee_shield_defense_brute_all_off_set_bonuses.json"
+    );
+
+    expect(setBonuses).toEqual(expected);
+  });
+
+  it("matches all off totals", async () => {
+    // (a) database is already loaded
+    const db = DatabaseAPI.Database;
+
+    // (b) load a Mids build (export string / file / JSON)
+    const buildFile = "test-data/builds/Lorenzo (Electrical Melee - Shield Defense) - all off.mbd";
+
+    // (c) create store & trigger calculations
+    const store = createDomainStore(db).getState();
+
+    await store.loadBuildFile(buildFile);
+    expect(store.getCharacterName()).toBe("Lorenzo Mondavi");
+    
+    // Force any lazy computation paths if needed
+    const actualTotals = store.getTotalStatistics();
+
+    // (d) load expected golden values
+    const expected = loadGoldenResult(
+      "test/test-data/golden/electrical_melee_shield_defense_brute_all_off.json"
+    );
+
+    // Compare with tolerance
+    expect(actualTotals.Absorb).toBeCloseTo(expected.Absorb, 2);
+    expect(actualTotals.BuffAcc).toBeCloseTo(expected.BuffAcc, 2);
+    expect(actualTotals.BuffToHit).toBeCloseTo(expected.BuffToHit, 2);
+    expect(actualTotals.EndRec).toBeCloseTo(expected.EndRec, 2);
+    expect(actualTotals.EndUse).toBeCloseTo(expected.EndUse, 2);
+    expect(actualTotals.EndMax).toBeCloseTo(expected.EndMax, 2);
+    expect(actualTotals.RunSpd).toBeCloseTo(expected.RunSpd, 2);
+    expect(actualTotals.JumpSpd).toBeCloseTo(expected.JumpSpd, 2);
+    expect(actualTotals.JumpHeight).toBeCloseTo(expected.JumpHeight, 2);
+    expect(actualTotals.StealthPvE).toBeCloseTo(expected.StealthPvE, 2);
+    expect(actualTotals.StealthPvP).toBeCloseTo(expected.StealthPvP, 2);
+    expect(actualTotals.ThreatLevel).toBeCloseTo(expected.ThreatLevel, 2);
+    expect(actualTotals.Perception).toBeCloseTo(expected.Perception, 2);
+    expect(actualTotals.BuffHaste).toBeCloseTo(expected.BuffHaste, 2);
+    expect(actualTotals.BuffDam).toBeCloseTo(expected.BuffDam, 2);
+    expect(actualTotals.BuffEndRdx).toBeCloseTo(expected.BuffEndRdx, 2);
+    expect(actualTotals.BuffRange).toBeCloseTo(expected.BuffRange, 2);
+    expect(actualTotals.HPRegen).toBeCloseTo(expected.HPRegen, 2);
+    expect(actualTotals.HPMax).toBeCloseTo(expected.HPMax, 2);
+    for (let i = 0; i < actualTotals.Def.length; i++) {
+      expect(actualTotals.Def[i]).toBeCloseTo(expected.Def[i], 2);
+    }
+    for (let i = 0; i < actualTotals.Res.length; i++) {
+      expect(actualTotals.Res[i]).toBeCloseTo(expected.Res[i], 2);
+    }
+    for (let i = 0; i < actualTotals.MezRes.length; i++) {
+      expect(actualTotals.MezRes[i]).toBeCloseTo(expected.MezRes[i], 2);
+    }
+    for (let i = 0; i < actualTotals.DebuffRes.length; i++) {
+      expect(actualTotals.DebuffRes[i]).toBeCloseTo(expected.DebuffRes[i], 2);
+    }
+    for (let i = 0; i < actualTotals.Elusivity.length; i++) {
+      expect(actualTotals.Elusivity[i]).toBeCloseTo(expected.Elusivity[i], 2);
+    }
+    expect(actualTotals.ElusivityMax).toBeCloseTo(expected.ElusivityMax, 2);
+    expect(actualTotals.MaxRunSpd).toBeCloseTo(expected.MaxRunSpd, 2);
+    expect(actualTotals.MaxJumpSpd).toBeCloseTo(expected.MaxJumpSpd, 2);
+    expect(actualTotals.MaxFlySpd).toBeCloseTo(expected.MaxFlySpd, 2);
+    expect(actualTotals.JumpHeight).toBeCloseTo(expected.JumpHeight, 2);
+    expect(actualTotals.StealthPvE).toBeCloseTo(expected.StealthPvE, 2);
+    expect(actualTotals.StealthPvP).toBeCloseTo(expected.StealthPvP, 2);
+    expect(actualTotals.ThreatLevel).toBeCloseTo(expected.ThreatLevel, 2);
+    expect(actualTotals.Perception).toBeCloseTo(expected.Perception, 2);
+    expect(actualTotals.BuffHaste).toBeCloseTo(expected.BuffHaste, 2);
+    expect(actualTotals.BuffAcc).toBeCloseTo(expected.BuffAcc, 2);
+    expect(actualTotals.BuffToHit).toBeCloseTo(expected.BuffToHit, 2);
+    expect(actualTotals.BuffDam).toBeCloseTo(expected.BuffDam, 2);
+    expect(actualTotals.BuffEndRdx).toBeCloseTo(expected.BuffEndRdx, 2);
+    expect(actualTotals.BuffRange).toBeCloseTo(expected.BuffRange, 2);
+    expect(actualTotals.HPRegen).toBeCloseTo(expected.HPRegen, 2);
+    expect(actualTotals.HPMax).toBeCloseTo(expected.HPMax, 2);
+  });
+
   it("matches golden totals", async () => {
     // (a) database is already loaded
     const db = DatabaseAPI.Database;
@@ -80,7 +209,7 @@ describe("Golden Mids build comparisons", async () => {
     const buildFile = "test-data/builds/Lorenzo (Electrical Melee - Shield Defense).mbd";
 
     // (c) create store & trigger calculations
-    const store = new DomainStore(db);
+    const store = createDomainStore(db).getState();
 
     await store.loadBuildFile(buildFile);
     expect(store.getCharacterName()).toBe("Lorenzo Mondavi");

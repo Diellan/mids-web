@@ -6,7 +6,7 @@ import type { IEffect } from './IEffect';
 import { DatabaseAPI } from './DatabaseAPI';
 import { MidsContext } from './Base/Master_Classes/MidsContext';
 import { Enhancement } from './Enhancement';
-import { ePowerSetType, dmModes, eSchedule, eEffectType, eDamage, eMez, eEnhance, eGridType, ePowerType, eToWho, eAspect, eBuffMode, eEffectClass, eStatType, eSpecialCase, eEffMode, eAttribType, ShortFX, ShortFXImpl, BuffsX, BuffsXImpl } from './Enums';
+import { ePowerSetType, dmModes, eSchedule, eEffectType, eDamage, eMez, eEnhance, eGridType, ePowerType, eToWho, eAspect, eBuffMode, eEffectClass, eStatType, eSpecialCase, eEffMode, eAttribType, ShortFX, ShortFXImpl, BuffsX, BuffsXImpl, StringToFlaggedEnum, IsEnumValue } from './Enums';
 import type { Archetype } from './Base/Data_Classes/Archetype';
 import type { I9Slot } from './I9Slot';
 import { Power } from './Base/Data_Classes/Power';
@@ -744,9 +744,9 @@ export class Toon extends Character {
     }
 
     const basePower = DatabaseAPI.Database.Power[powerEntry.NIDPower];
-    const isAcc = !basePower.IgnoreEnhancement(eEnhance.Accuracy);
-    const isRech = !basePower.IgnoreEnhancement(eEnhance.RechargeTime);
-    const isEnd = !basePower.IgnoreEnhancement(eEnhance.EnduranceDiscount);
+    const isAcc = basePower.IgnoreEnhancement(eEnhance.Accuracy);
+    const isRech = basePower.IgnoreEnhancement(eEnhance.RechargeTime);
+    const isEnd = basePower.IgnoreEnhancement(eEnhance.EnduranceDiscount);
 
     const effectTypeCount = Object.keys(eEffectType).length / 2; // Approximate enum count
 
@@ -783,17 +783,19 @@ export class Toon extends Character {
           }
 
           let fxDuration = 0;
-          let flag6 = false; // IsEnumValue check
+          let flag6 = IsEnumValue(eEffectType[eEffectType2], eEnhance);
           let flag7 = false;
 
           // Check for special cases
-          if (powerMath.Effects[effIdx].EffectType === eEffectType.Enhancement && 
-              powerMath.Effects[effIdx].ETModifies === eEffectType.Accuracy) {
-            flag6 = true;
-            flag7 = true;
-          } else if (powerMath.Effects[effIdx].EffectType === eEffectType.ResEffect && 
-                     powerMath.Effects[effIdx].ETModifies === eEffectType.Defense) {
-            flag6 = true;
+          if (!flag6) {
+            if (powerMath.Effects[effIdx].EffectType === eEffectType.Enhancement &&
+                powerMath.Effects[effIdx].ETModifies === eEffectType.Accuracy) {
+              flag6 = true;
+              flag7 = true;
+            } else if (powerMath.Effects[effIdx].EffectType === eEffectType.ResEffect &&
+                       powerMath.Effects[effIdx].ETModifies === eEffectType.Defense) {
+              flag6 = true;
+            }
           }
 
           if (!flag6) {
@@ -801,13 +803,15 @@ export class Toon extends Character {
             if (!allowedFx) {
               continue;
             }
-            if (!this.CheckAllowedFromFx(allowedFx, powerMath.Effects[effIdx].EffectType, 
+            if (!this.CheckAllowedFromFx(allowedFx, powerMath.Effects[effIdx].EffectType,
                 powerMath.Effects[effIdx].MezType, powerMath.Effects[effIdx].ETModifies)) {
               continue;
             }
           }
 
-          const iEffect = !flag7 ? eEnhance.None : eEnhance.Accuracy; // Simplified - would need StringToFlaggedEnum
+          const iEffect = !flag7
+            ? StringToFlaggedEnum(eEffectType[eEffectType2], eEnhance) as eEnhance
+            : eEnhance.Accuracy;
           
           let fxMag = 0;
           if (eEffectType2 === eEffectType.Mez) {
@@ -868,16 +872,24 @@ export class Toon extends Character {
       for (let index2 = 0; index2 < Object.keys(eEffectType).length / 2; index2++) {
         const effectType = index2 as eEffectType;
         if (eff.EffectType !== effectType) continue;
-        
-        let iEnh = eEnhance.None; // Simplified - would need StringToFlaggedEnum
+
+        let isOk = IsEnumValue(eEffectType[effectType], eEnhance);
         let isSpecial = false;
-        
-        if (eff.EffectType === eEffectType.Enhancement && eff.ETModifies === eEffectType.Accuracy) {
-          isSpecial = true;
-          iEnh = eEnhance.Accuracy;
-        } else if (eff.EffectType === eEffectType.ResEffect && eff.ETModifies === eEffectType.Defense) {
-          iEnh = eEnhance.Defense;
+
+        if (!isOk) {
+          if (eff.EffectType === eEffectType.Enhancement && eff.ETModifies === eEffectType.Accuracy) {
+            isOk = true;
+            isSpecial = true;
+          } else if (eff.EffectType === eEffectType.ResEffect && eff.ETModifies === eEffectType.Defense) {
+            isOk = true;
+          }
         }
+
+        if (!isOk) continue;
+
+        const iEnh = !isSpecial
+          ? StringToFlaggedEnum(eEffectType[effectType], eEnhance) as eEnhance
+          : eEnhance.Accuracy;
 
         if (effectType === eEffectType.Mez) {
           eff.Math_Mag = Enhancement.ApplyED(Enhancement.GetSchedule(iEnh, eff.MezType), eff.Math_Mag);
@@ -902,9 +914,9 @@ export class Toon extends Character {
     if (!powerEntry) return false;
     
     const basePower = DatabaseAPI.Database.Power[powerEntry.NIDPower];
-    const okAcc = !basePower.IgnoreEnhancement(eEnhance.Accuracy);
-    const okRecharge = !basePower.IgnoreEnhancement(eEnhance.RechargeTime);
-    const okEnd = !basePower.IgnoreEnhancement(eEnhance.EnduranceDiscount);
+    const okAcc = basePower.IgnoreEnhancement(eEnhance.Accuracy);
+    const okRecharge = basePower.IgnoreEnhancement(eEnhance.RechargeTime);
+    const okEnd = basePower.IgnoreEnhancement(eEnhance.EnduranceDiscount);
 
     // Apply self-enhancement buffs
     for (let index1 = 0; index1 < this._selfEnhance.Effect.length; index1++) {
@@ -1292,33 +1304,6 @@ export class Toon extends Character {
     }
   }
 
-  private static HandleGrantPowerIncarnate(powerMath: IPower, effect1: IEffect, buffedPowers: (IPower | null)[], effIdx: number, at: Archetype | null, hIDX: number): void {
-    powerMath.AbsorbEffects(DatabaseAPI.Database.Power[effect1.nSummon], effect1.Duration, 0, at, 1, true, effIdx);
-    for (const fx of powerMath.Effects) {
-      fx.ToWho = eToWho.Target;
-      fx.Absorbed_Effect = true;
-      fx.isEnhancementEffect = effect1.isEnhancementEffect;
-      fx.BaseProbability *= effect1.BaseProbability;
-      fx.EffectiveProbability = fx.Probability * effect1.Probability;
-      fx.Ticks = effect1.Ticks;
-    }
-
-    if (hIDX <= -1) return;
-    
-    const buffedPower = buffedPowers[hIDX];
-    if (!buffedPower) return;
-    
-    const length2 = buffedPower.Effects.length;
-    buffedPower.AbsorbEffects(DatabaseAPI.Database.Power[effect1.nSummon], effect1.Duration, 0, at, 1, true, effIdx);
-    for (let index2 = length2; index2 < buffedPower.Effects.length; index2++) {
-      buffedPower.Effects[index2].ToWho = effect1.ToWho;
-      buffedPower.Effects[index2].Absorbed_Effect = true;
-      buffedPower.Effects[index2].isEnhancementEffect = effect1.isEnhancementEffect;
-      buffedPower.Effects[index2].EffectiveProbability = buffedPower.Effects[index2].Probability * effect1.Probability;
-      buffedPower.Effects[index2].Ticks = effect1.Ticks;
-    }
-  }
-
   private GBPA_ApplyIncarnateEnhancements(powerMath: IPower, hIDX: number, sourcePower: IPower | null, ignoreED: boolean, effectType: eEffectType): void {
     if (!powerMath || !sourcePower || sourcePower.Effects.length === 0 || !powerMath.Slottable) {
       return;
@@ -1360,11 +1345,11 @@ export class Toon extends Character {
         continue;
       }
 
-      if (effectType === eEffectType.Enhancement && 
+      if (effectType === eEffectType.Enhancement &&
           (effect1.EffectType === eEffectType.DamageBuff || effect1.EffectType === eEffectType.Enhancement)) {
-        const incAcc = !powerMath.IgnoreEnhancement(eEnhance.Accuracy);
-        const incRech = !powerMath.IgnoreEnhancement(eEnhance.RechargeTime);
-        const incEndDisc = !powerMath.IgnoreEnhancement(eEnhance.EnduranceDiscount);
+        const incAcc = powerMath.IgnoreEnhancement(eEnhance.Accuracy);
+        const incRech = powerMath.IgnoreEnhancement(eEnhance.RechargeTime);
+        const incEndDisc = powerMath.IgnoreEnhancement(eEnhance.EnduranceDiscount);
         
         if (effect1.ETModifies === eEffectType.Accuracy && incAcc) {
           powerMath.Accuracy += effect1.BuffedMag;
@@ -1379,8 +1364,6 @@ export class Toon extends Character {
         } else {
           Toon.HandleDefaultIncarnateEnh(powerMath, effect1);
         }
-      } else if (effect1.EffectType === eEffectType.GrantPower) {
-        Toon.HandleGrantPowerIncarnate(powerMath, effect1, this._buffedPowers, effIdx, this.Archetype, hIDX);
       } else {
         powerMath.AbsorbEffects(power1, effect1.Duration, 0, this.Archetype, 1, true, effIdx, effIdx);
         

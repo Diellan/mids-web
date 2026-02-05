@@ -773,7 +773,7 @@ namespace Mids_Reborn
                         continue;
                     }
 
-                    // ToHit (non-enhancement) — ignore tertiary enhancement-class side paths
+                    // ToHit (non-enhancement) ï¿½ ignore tertiary enhancement-class side paths
                     if (!enhancementPass && iEffect == Enums.eEffectType.ToHit)
                     {
                         if (fx is not { isEnhancementEffect: true, EffectClass: Enums.eEffectClass.Tertiary })

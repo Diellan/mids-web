@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm tsc:*)",
+      "Bash(pnpm vitest run:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm run pretest:*)",
+      "Bash(rg:*)",
+      "Bash(pnpm add:*)",
+      "Bash(git stash:*)"
+    ]
+  }
+}

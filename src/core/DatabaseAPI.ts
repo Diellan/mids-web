@@ -5,7 +5,7 @@ import type { IPower } from './IPower';
 import type { IPowerset } from './IPowerset';
 import type { IEnhancement } from './IEnhancement';
 import { PowersetGroup } from './PowersetGroup';
-import { dmModes, ePowerSetType, eType } from './Enums';
+import { dmModes, eBuffMode, eEffectType, ePowerSetType, eType, eBoosts } from './Enums';
 import { Database } from './Base/Data_Classes/Database';
 import { ServerData } from './ServerData';
 import { AppDataPaths } from './AppDataPaths';
@@ -1491,9 +1491,11 @@ export class DatabaseAPI {
         const boosts: string[] = [];
         if (power.BoostsAllowed.length <= 0 && power.Enhancements.length > 0) {
           for (const enh of power.Enhancements) {
-            // Note: Would need Enum.GetName equivalent for eBoosts
-            // For now, using the numeric value as string
-            boosts.push(enh.toString());
+            // Get enum name from value (TypeScript equivalent of Enum.GetName)
+            const boostName = eBoosts[enh];
+            if (boostName) {
+              boosts.push(boostName);
+            }
           }
           power.BoostsAllowed = boosts;
         }
@@ -1666,7 +1668,7 @@ export class DatabaseAPI {
       iClass = effPower.ForcedClass
         ? this.NidFromUidClass(effPower.ForcedClass)
         : iEffect.Absorbed_Class_nID <= -1
-          ? 0 // MidsContext.Archetype.Idx
+          ? MidsContext.Archetype!.Idx
           : iEffect.Absorbed_Class_nID;
 
       // Everything seems to be valid, return the modifier
@@ -1801,27 +1803,27 @@ export class DatabaseAPI {
       if (power.GetPowerSet()?.SetType === ePowerSetType.SetBonus) {
         flag = power.PowerName.includes('Slow');
         if (flag) {
-          power.BuffMode = 1; // Enums.eBuffMode.Debuff
+          power.BuffMode = eBuffMode.Debuff;
           for (const effect of power.Effects) {
-            effect.buffMode = 1; // Enums.eBuffMode.Debuff
+            effect.buffMode = eBuffMode.Debuff;
           }
         }
       }
 
       for (const effect of power.Effects) {
         if (flag) {
-          effect.buffMode = 1; // Enums.eBuffMode.Debuff
+          effect.buffMode = eBuffMode.Debuff;
         }
 
         switch (effect.EffectType) {
-          case 20: // Enums.eEffectType.GrantPower
+          case eEffectType.GrantPower:
             effect.nSummon = this.NidFromUidPower(effect.Summon);
             power.HasGrantPowerEffect = true;
             break;
-          case 21: // Enums.eEffectType.EntCreate
+          case eEffectType.EntCreate:
             effect.nSummon = this.NidFromUidEntity(effect.Summon);
             break;
-          case 22: // Enums.eEffectType.PowerRedirect
+          case eEffectType.PowerRedirect:
             effect.nSummon = this.NidFromUidPower(effect.Override);
             power.HasPowerOverrideEffect = true;
             break;
