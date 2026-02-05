@@ -87,6 +87,8 @@ export interface DomainStoreState {
 
   // Async
   loadBuildFile: (buildFile: string) => Promise<void>;
+  loadBuildFromContent: (content: string) => Promise<void>;
+  saveBuildFile: () => Promise<void>;
 }
 
 export type DomainStoreApi = StoreApi<DomainStoreState>;
@@ -356,6 +358,31 @@ export function createDomainStore(database?: IDatabase, toon?: Toon): DomainStor
               enhancedPower: null,
               ...computeAllPowersetOptions(newToon, database),
             }), false, 'loadBuildFile');
+          },
+
+          loadBuildFromContent: async (content: string) => {
+            const { database } = get();
+            const newToon = await BuildManager.Instance.LoadFromContent(content);
+            MidsContext.Character = newToon;
+            MidsContext.Archetype = newToon.Archetype;
+            MidsContext.Build = newToon.CurrentBuild;
+            newToon.GenerateBuffedPowerArray();
+            set(s => ({
+              toon: newToon,
+              _version: s._version + 1,
+              highlightedPower: null,
+              powers: computePowers(newToon),
+              basePower: null,
+              enhancedPower: null,
+              ...computeAllPowersetOptions(newToon, database),
+            }), false, 'loadBuildFromContent');
+          },
+
+          saveBuildFile: async () => {
+            const { toon } = get();
+            const content = BuildManager.Instance.SerializeBuild(toon);
+            const defaultName = (toon.Name || 'build') + '.mbd';
+            await (window as any).ipcRenderer.invoke('dialog:save-file', { content, defaultName });
           },
         };
       },

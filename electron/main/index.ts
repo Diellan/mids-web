@@ -1,7 +1,8 @@
-import { app, BrowserWindow, shell, ipcMain } from 'electron'
+import { app, BrowserWindow, shell, ipcMain, Menu, dialog } from 'electron'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import fs from 'node:fs'
 import os from 'node:os'
 import { update } from './update'
 
@@ -79,7 +80,81 @@ async function createWindow() {
 
   // Auto update
   update(win)
+
+  // Application menu
+  const menu = Menu.buildFromTemplate([
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'Open',
+          accelerator: 'CmdOrCtrl+O',
+          click: async () => {
+            if (!win) return
+            const result = await dialog.showOpenDialog(win, {
+              filters: [{ name: 'Build Files', extensions: ['mbd', 'mxd'] }],
+              properties: ['openFile'],
+            })
+            if (!result.canceled && result.filePaths.length > 0) {
+              const content = fs.readFileSync(result.filePaths[0], 'utf-8')
+              win.webContents.send('file:opened', content, result.filePaths[0])
+            }
+          },
+        },
+        {
+          label: 'Save',
+          accelerator: 'CmdOrCtrl+S',
+          click: () => {
+            if (!win) return
+            win.webContents.send('file:save-requested')
+          },
+        },
+        { type: 'separator' },
+        { role: 'quit' },
+      ],
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+      ],
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' },
+      ],
+    },
+  ])
+  Menu.setApplicationMenu(menu)
 }
+
+// IPC handler for saving files via native dialog
+ipcMain.handle('dialog:save-file', async (_, { content, defaultName }) => {
+  if (!win) return { filePath: null }
+  const result = await dialog.showSaveDialog(win, {
+    defaultPath: defaultName || 'build.mbd',
+    filters: [{ name: 'Build Files', extensions: ['mbd', 'mxd'] }],
+  })
+  if (!result.canceled && result.filePath) {
+    fs.writeFileSync(result.filePath, content, 'utf-8')
+    return { filePath: result.filePath }
+  }
+  return { filePath: null }
+})
 
 app.whenReady().then(createWindow)
 

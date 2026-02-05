@@ -1,7 +1,6 @@
 // Converted from C# Enums.cs
 // This file contains all enum definitions, structs, and utility functions
 
-import type { IEffect } from './IEffect';
 
 // ============================================================================
 // ENUMS
@@ -1356,15 +1355,6 @@ export interface sEnhClass {
 export interface sTwinID {
   ID: number;
   SubID: number;
-}
-
-export interface sEffect {
-  Mode: eEffMode;
-  BuffMode: eBuffDebuff;
-  Enhance: sTwinID;
-  Schedule: eSchedule;
-  Multiplier: number;
-  FX: IEffect | null;
 }
 
 export interface ShortFX {

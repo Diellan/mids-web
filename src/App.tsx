@@ -32,6 +32,34 @@ function App() {
     });
   }, []);
 
+  // Wire Electron menu events to the store
+  useEffect(() => {
+    if (!domainStore) return;
+    const ipc = (window as any).ipcRenderer;
+    if (!ipc) return;
+
+    const onFileOpened = (_event: any, content: string, _filePath: string) => {
+      domainStore.getState().loadBuildFromContent(content).catch((err: any) => {
+        console.error('Failed to open build file:', err);
+        alert(err.message || 'Failed to open build file');
+      });
+    };
+
+    const onSaveRequested = () => {
+      domainStore.getState().saveBuildFile().catch((err: any) => {
+        console.error('Failed to save build file:', err);
+        alert(err.message || 'Failed to save build file');
+      });
+    };
+
+    ipc.on('file:opened', onFileOpened);
+    ipc.on('file:save-requested', onSaveRequested);
+    return () => {
+      ipc.off('file:opened', onFileOpened);
+      ipc.off('file:save-requested', onSaveRequested);
+    };
+  }, [domainStore]);
+
   // ⛔️ Do not render Provider until store exists
   if (!domainStore) {
     return (

@@ -7,7 +7,11 @@
       "Bash(pnpm run pretest:*)",
       "Bash(rg:*)",
       "Bash(pnpm add:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(fd:*)",
+      "Bash(npx tsc:*)",
+      "Bash(findstr:*)",
+      "Bash(Select-String -Pattern \"BuildManager|DomainStore|App\\\\.tsx|main[/\\\\]index\")"
     ]
   }
 }

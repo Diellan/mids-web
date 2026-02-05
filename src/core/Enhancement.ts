@@ -1,7 +1,8 @@
 // Converted from C# Enhancement.cs
 import type { IEnhancement } from './IEnhancement';
 import type { IPower } from './IPower';
-import { eType, eEnhMutex, eBuffDebuff, eEffMode, ePowerType, sEffect, eSchedule, eEnhance } from './Enums';
+import { eType, eEnhMutex, eBuffDebuff, eEffMode, ePowerType, eSchedule, eEnhance } from './Enums';
+import type { sEffect } from './IEnhancement';
 import type { EnhancementSet } from './EnhancementSet';
 import { BinaryReader, BinaryWriter } from 'csharp-binary-stream';
 import { Effect } from './Base/Data_Classes/Effect';

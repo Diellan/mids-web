@@ -126,6 +126,90 @@ export class BuildManager {
         throw new Error('Failed to load build data');
     }
 
+    async LoadFromContent(content: string): Promise<Toon> {
+        const preferences = await BuildPreferences.Load();
+        let parsed: CharacterBuildData;
+        try {
+            parsed = JSON.parse(content);
+        } catch (ex: any) {
+            throw new Error(`Failed to parse build data: ${ex.message}`);
+        }
+
+        try {
+            this.BuildData = this.DeserializeCharacterBuildData(parsed);
+            if (this.BuildData === null) {
+                throw new Error('Failed to deserialize build data');
+            }
+        } catch (ex: any) {
+            throw new Error(ex.message);
+        }
+
+        if (this.BuildData === null) {
+            throw new Error('Cannot load build - error reading build data.');
+        }
+
+        const metaData = this.BuildData.BuiltWith;
+        if (metaData === null) {
+            throw new Error('Cannot load build - error reading build metadata.');
+        }
+
+        if (DatabaseAPI.DatabaseName !== metaData.Database) {
+            throw new Error(`This build requires the ${metaData.Database} be installed prior to loading it.\r\nPlease install the database and try again.`);
+        } else {
+            if (MidsContext.Config?.WarnOnOldDbMbd) {
+                const outDatedDb = Helpers.IsVersionNewer(
+                    { major: metaData.DatabaseVersion.major, minor: metaData.DatabaseVersion.minor, build: metaData.DatabaseVersion.build, revision: metaData.DatabaseVersion.revision },
+                    { major: DatabaseAPI.Database.Version.major || 0, minor: DatabaseAPI.Database.Version.minor || 0, build: DatabaseAPI.Database.Version.build || 0, revision: DatabaseAPI.Database.Version.revision || 0 }
+                );
+                const newerDb = Helpers.IsVersionNewer(
+                    { major: DatabaseAPI.Database.Version.major || 0, minor: DatabaseAPI.Database.Version.minor || 0, build: DatabaseAPI.Database.Version.build || 0, revision: DatabaseAPI.Database.Version.revision || 0 },
+                    { major: metaData.DatabaseVersion.major, minor: metaData.DatabaseVersion.minor, build: metaData.DatabaseVersion.build, revision: metaData.DatabaseVersion.revision }
+                );
+                let continueLoad = false;
+
+                if (outDatedDb) {
+                    if (preferences.ShouldSkipWarning('import')) {
+                        continueLoad = true;
+                    } else {
+                        const result = confirm(
+                            `This build was created in an older version of the ${metaData.Database} database.\r\nSome powers and/or enhancements may have changed, you may need to rebuild some of it.`
+                        );
+                        if (result) {
+                            continueLoad = true;
+                        }
+                    }
+                }
+
+                if (newerDb) {
+                    if (preferences.ShouldSkipWarning('import')) {
+                        continueLoad = true;
+                    } else {
+                        const result = confirm(
+                            `This build was created in an newer version of the ${metaData.Database} database.\r\nIt is recommended that you update the database.`
+                        );
+                        if (result) {
+                            continueLoad = true;
+                        }
+                    }
+                }
+
+                if (!outDatedDb && !newerDb) continueLoad = true;
+
+                if (continueLoad) {
+                    return this.BuildData.LoadBuild();
+                }
+            } else {
+                return this.BuildData.LoadBuild();
+            }
+        }
+        throw new Error('Failed to load build data');
+    }
+
+    SerializeBuild(character: Character): string {
+        this.BuildData?.Update(character);
+        return JSON.stringify(this.BuildData, null, 2);
+    }
+
     async SaveToFile(character: Character | null, fileName: string | null): Promise<boolean> {
         if (!fileName || fileName.trim() === '') return false;
         if (character === null || character.CurrentBuild === null) return false;
