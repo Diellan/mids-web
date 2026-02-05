@@ -11,7 +11,9 @@
       "Bash(fd:*)",
       "Bash(npx tsc:*)",
       "Bash(findstr:*)",
-      "Bash(Select-String -Pattern \"BuildManager|DomainStore|App\\\\.tsx|main[/\\\\]index\")"
+      "Bash(Select-String -Pattern \"BuildManager|DomainStore|App\\\\.tsx|main[/\\\\]index\")",
+      "Bash(dir:*)",
+      "Bash(npx vitest run:*)"
     ]
   }
 }

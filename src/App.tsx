@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import CssBaseline from '@mui/material/CssBaseline';
-import { AppBar, ThemeProvider, Toolbar, Typography } from '@mui/material';
+import { ThemeProvider } from '@mui/material';
 import midsTheme from './midsTheme';
 import { DatabaseAPI } from './core/DatabaseAPI';
 import { ServerData } from './core/ServerData';
@@ -74,11 +74,6 @@ function App() {
     <ThemeProvider theme={midsTheme}>
       <CssBaseline />
       <DomainStoreContext.Provider value={domainStore}>
-        <AppBar position='static'>
-          <Toolbar>
-            <Typography variant="h6">Mids Hero Designer</Typography>
-          </Toolbar>
-        </AppBar>
         <MidsBuilder />
       </DomainStoreContext.Provider>
     </ThemeProvider>
