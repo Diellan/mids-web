@@ -2,6 +2,7 @@ import List from "@mui/material/List";
 import Card, { CardProps } from "@mui/material/Card";
 import ListItem, { ListItemProps } from "@mui/material/ListItem";
 import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
 import { styled } from "@mui/material";
 import { PowerEntry } from "@/core/PowerEntry";
 import { useDomainStoreInstance } from "@/domainStore/domainStoreContext";
@@ -74,7 +75,28 @@ const PowerLevel = styled(Typography)(({ theme }) => ({
 const PowerTitle = styled(Typography)(({ theme }) => ({
   textShadow: '-1px 0 1px #000, 1px 0 1px #000, 0 -1px 1px #000, 0 1px 1px #000',
   fontWeight: 'bold',
-  fontStyle: 'italic'
+  fontStyle: 'italic',
+  flex: 1
+}));
+
+interface ToggleCircleProps {
+  active?: boolean;
+  activeColor?: string;
+}
+
+const ToggleCircle = styled(Box, { shouldForwardProp: (prop) => prop !== 'active' && prop !== 'activeColor' })<ToggleCircleProps>(({ active, activeColor = '#00cc00' }) => ({
+  width: 14,
+  height: 14,
+  borderRadius: '50%',
+  backgroundColor: active ? activeColor : '#222',
+  border: '2px solid #555',
+  cursor: 'pointer',
+  flexShrink: 0,
+  marginLeft: 4,
+  alignSelf: 'center',
+  '&:hover': {
+    borderColor: '#aaa'
+  }
 }));
 
 const PowerEnhancer = ({ powerEntryId, ...prop }: { powerEntryId: string }) => {
@@ -97,12 +119,27 @@ const PowerEnhancer = ({ powerEntryId, ...prop }: { powerEntryId: string }) => {
     domainStore.pickEnhancement(enhancement, grade, powerEntryId, slotIndex);
   };
 
+  const canToggle = isPicked && powerEntry.CanIncludeForStats();
+  const hasProc = isPicked && powerEntry.HasProc();
+
+  const handleToggleActive = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    domainStore.toggleStatInclude(powerEntryId);
+  };
+
+  const handleToggleProc = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    domainStore.toggleProcInclude(powerEntryId);
+  };
+
   return (
-    <PowerSlot picked={isPicked} highlighted={isChosen} {...prop} onMouseOver={() => domainStore.setHighlightedPower(powerEntry)}>
+    <PowerSlot picked={isPicked} highlighted={isChosen} {...prop} onMouseOver={() => domainStore.setHighlightedPower(powerEntry)} sx={{ display: 'flex', alignItems: 'center' }}>
       {powerEntry.Level > -1 && <PowerLevel>{powerEntry.Level+1}</PowerLevel>}
       <PowerTitle
         variant='button'
       >{powerEntry.Power?.DisplayName}</PowerTitle>
+      {hasProc && <ToggleCircle active={!powerEntry.ProcInclude} activeColor="#cccc00" onClick={handleToggleProc} />}
+      {canToggle && <ToggleCircle active={powerEntry.StatInclude} onClick={handleToggleActive} />}
       {powerEntry.Power && powerEntry.Power.Slottable && <Slots>
         {powerEntry.Slots.map((slot, index) => (
           <PowerSlotEnhancer slotEntry={slot} key={index} power={powerEntry.Power!} onSetEnhancement={(enhancement, grade) => setEnhancement(enhancement, grade, index)} />

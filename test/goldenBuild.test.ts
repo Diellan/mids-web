@@ -275,4 +275,86 @@ describe("Golden Mids build comparisons", async () => {
     expect(actualTotals.HPRegen).toBeCloseTo(expected.HPRegen, 2);
     expect(actualTotals.HPMax).toBeCloseTo(expected.HPMax, 2);
   });
+
+  it("toggleStatInclude changes totals", async () => {
+    const db = DatabaseAPI.Database;
+    const buildFile = "test-data/builds/Lorenzo (Electrical Melee - Shield Defense).mbd";
+    const store = createDomainStore(db).getState();
+    await store.loadBuildFile(buildFile);
+
+    // Find a toggle power with StatInclude=true (Shield Defense toggle)
+    const powers = store.getPowers();
+    const togglePower = powers.find(
+      p => p && p.StatInclude && p.CanIncludeForStats() && p.Power?.DisplayName === "Deflection"
+    );
+    expect(togglePower).toBeTruthy();
+
+    // Record initial totals
+    const initialTotals = store.getTotalStatistics();
+    const initialDef = [...initialTotals.Def];
+
+    // Toggle the power off
+    store.toggleStatInclude(togglePower!.id);
+    expect(togglePower!.StatInclude).toBe(false);
+
+    // Totals should have changed — defense should be lower
+    const afterOffTotals = store.getTotalStatistics();
+    const defDecreased = initialDef.some((d, i) => d > afterOffTotals.Def[i]);
+    expect(defDecreased).toBe(true);
+
+    // Toggle back on — totals should match initial
+    store.toggleStatInclude(togglePower!.id);
+    expect(togglePower!.StatInclude).toBe(true);
+
+    const restoredTotals = store.getTotalStatistics();
+    for (let i = 0; i < initialDef.length; i++) {
+      expect(restoredTotals.Def[i]).toBeCloseTo(initialDef[i], 2);
+    }
+  });
+
+  it("toggleStatInclude on from all-off build increases totals", async () => {
+    const db = DatabaseAPI.Database;
+    const buildFile = "test-data/builds/Lorenzo (Electrical Melee - Shield Defense) - all off.mbd";
+    const store = createDomainStore(db).getState();
+    await store.loadBuildFile(buildFile);
+
+    const initialTotals = store.getTotalStatistics();
+    const initialDef = [...initialTotals.Def];
+
+    // Find Deflection (Shield Defense toggle) — should be off in the all-off build
+    const powers = store.getPowers();
+    const deflection = powers.find(
+      p => p && !p.StatInclude && p.CanIncludeForStats() && p.Power?.DisplayName === "Deflection"
+    );
+    expect(deflection).toBeTruthy();
+
+    // Toggle it on
+    store.toggleStatInclude(deflection!.id);
+    expect(deflection!.StatInclude).toBe(true);
+
+    // Defense should increase
+    const afterOnTotals = store.getTotalStatistics();
+    const defIncreased = initialDef.some((d, i) => afterOnTotals.Def[i] > d);
+    expect(defIncreased).toBe(true);
+  });
+
+  it("toggleStatInclude is no-op for non-toggleable powers", async () => {
+    const db = DatabaseAPI.Database;
+    const buildFile = "test-data/builds/Lorenzo (Electrical Melee - Shield Defense).mbd";
+    const store = createDomainStore(db).getState();
+    await store.loadBuildFile(buildFile);
+
+    // Find a click power that is not a click buff (can't include for stats)
+    const powers = store.getPowers();
+    const clickPower = powers.find(
+      p => p && p.NIDPower > -1 && !p.CanIncludeForStats()
+    );
+    expect(clickPower).toBeTruthy();
+    const wasIncluded = clickPower!.StatInclude;
+
+    store.toggleStatInclude(clickPower!.id);
+
+    // Should not have changed
+    expect(clickPower!.StatInclude).toBe(wasIncluded);
+  });
 });

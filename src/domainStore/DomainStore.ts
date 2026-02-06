@@ -38,6 +38,7 @@ export interface DomainStoreState {
   originOptions: Origin[];
   basePower: IPower | null;
   enhancedPower: IPower | null;
+  totals: TotalStatistics;
 
   // Character
   getCharacterName: () => string;
@@ -61,6 +62,8 @@ export interface DomainStoreState {
   getPowers: () => (PowerEntry | null)[];
   getPowerEntryById: (id: string) => PowerEntry | null;
   togglePower: (power: IPower) => void;
+  toggleStatInclude: (powerEntryId: string) => void;
+  toggleProcInclude: (powerEntryId: string) => void;
   getHighlightedPower: () => PowerEntry | null;
   setHighlightedPower: (power: PowerEntry) => void;
   getBasePower: () => IPower | null;
@@ -97,6 +100,12 @@ export type DomainStoreApi = StoreApi<DomainStoreState>;
 
 function computePowers(toon: Toon): (PowerEntry | null)[] {
   return toon.CurrentBuild?.Powers ? [...toon.CurrentBuild.Powers] : [];
+}
+
+function computeTotals(toon: Toon): TotalStatistics {
+  const clone = new TotalStatistics();
+  clone.Assign(toon.Totals);
+  return clone;
 }
 
 function computePrimaryOptions(toon: Toon, db: IDatabase): IPowerset[] {
@@ -172,6 +181,7 @@ export function createDomainStore(database?: IDatabase, toon?: Toon): DomainStor
             powers: computePowers(toon),
             basePower: computeBasePower(toon, hp ?? null),
             enhancedPower: computeEnhancedPower(toon, hp ?? null),
+            totals: computeTotals(toon),
           }), false, action);
         };
 
@@ -191,6 +201,7 @@ export function createDomainStore(database?: IDatabase, toon?: Toon): DomainStor
           originOptions: initialOriginOptions,
           basePower: null,
           enhancedPower: null,
+          totals: computeTotals(initialToon),
 
           // --- Character ---
 
@@ -260,6 +271,22 @@ export function createDomainStore(database?: IDatabase, toon?: Toon): DomainStor
           togglePower: (power: IPower) => {
             get().toon.BuildPower(power.PowerSetID, power.PowerIndex);
             notify('togglePower');
+          },
+
+          toggleStatInclude: (powerEntryId: string) => {
+            const pe = get().powers.find(p => p && p.id === powerEntryId);
+            if (pe && pe.CanIncludeForStats()) {
+              pe.StatInclude = !pe.StatInclude;
+              notify('toggleStatInclude');
+            }
+          },
+
+          toggleProcInclude: (powerEntryId: string) => {
+            const pe = get().powers.find(p => p && p.id === powerEntryId);
+            if (pe && pe.HasProc()) {
+              pe.ProcInclude = !pe.ProcInclude;
+              notify('toggleProcInclude');
+            }
           },
 
           getHighlightedPower: () => get().highlightedPower,
@@ -332,7 +359,7 @@ export function createDomainStore(database?: IDatabase, toon?: Toon): DomainStor
 
           // --- Statistics ---
 
-          getTotalStatistics: () => get().toon.Totals,
+          getTotalStatistics: () => get().totals,
 
           getSetBonuses: () => get().toon.CurrentBuild?.SetBonuses ?? [],
 
@@ -356,6 +383,7 @@ export function createDomainStore(database?: IDatabase, toon?: Toon): DomainStor
               powers: computePowers(newToon),
               basePower: null,
               enhancedPower: null,
+              totals: computeTotals(newToon),
               ...computeAllPowersetOptions(newToon, database),
             }), false, 'loadBuildFile');
           },
@@ -374,6 +402,7 @@ export function createDomainStore(database?: IDatabase, toon?: Toon): DomainStor
               powers: computePowers(newToon),
               basePower: null,
               enhancedPower: null,
+              totals: computeTotals(newToon),
               ...computeAllPowersetOptions(newToon, database),
             }), false, 'loadBuildFromContent');
           },
