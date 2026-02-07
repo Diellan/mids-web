@@ -316,7 +316,7 @@ export class Toon extends Character {
     return result.state === 'Enabled';
   }
 
-  public GenerateBuffedPowerArray(): void {
+  public async GenerateBuffedPowerArray(): Promise<void> {
     if (!this.CurrentBuild) return;
     
     this.CurrentBuild.GenerateSetBonusData();
@@ -333,18 +333,18 @@ export class Toon extends Character {
     this.GenerateBuffData(this._selfEnhance, true);
 
     // Process powers sequentially (C# uses Parallel.For)
-    for (let hIDX = 0; hIDX < this._mathPowers.length; hIDX++) {
-      if (this._mathPowers[hIDX] == null) {
-        continue;
+    await Promise.all(this._mathPowers.map(async (power, hIDX) => {
+      if (power == null) {
+        return;
       }
 
-      this.GBPA_Pass1_EnhancePreED(this._mathPowers[hIDX], hIDX);
-      Toon.GBPA_Pass2_ApplyED(this._mathPowers[hIDX]);
-      this.GBPA_Pass3_EnhancePostED(this._mathPowers[hIDX], hIDX);
-      Toon.GBPA_Pass4_Add(this._mathPowers[hIDX]);
-      this.GBPA_ApplyArchetypeCaps(this._mathPowers[hIDX]);
-      Toon.GBPA_Pass5_MultiplyPreBuff(this._mathPowers[hIDX], this._buffedPowers[hIDX]);
-    }
+      this.GBPA_Pass1_EnhancePreED(power, hIDX);
+      Toon.GBPA_Pass2_ApplyED(power);
+      this.GBPA_Pass3_EnhancePostED(power, hIDX);
+      Toon.GBPA_Pass4_Add(power);
+      this.GBPA_ApplyArchetypeCaps(power);
+      Toon.GBPA_Pass5_MultiplyPreBuff(power, this._buffedPowers[hIDX]);
+    }));
 
     this.GenerateBuffData(this._selfBuffs, false);
 
@@ -498,7 +498,7 @@ export class Toon extends Character {
         continue;
       }
 
-      this.GBPA_MultiplyVariable(this._mathPowers[hIDX]!, hIDX);
+      Toon.GBPA_MultiplyVariable(this._mathPowers[hIDX]!, powerEntry);
       this._buffedPowers[hIDX] = new Power(this._mathPowers[hIDX]!);
       this._buffedPowers[hIDX]?.SetMathMag();
     }
@@ -552,7 +552,7 @@ export class Toon extends Character {
   }
 
   private static GBPA_AddEnhFX(iPower: IPower | null, currentPowerEntry: PowerEntry): void {
-    if (!MidsContext.Config || !currentPowerEntry.Power || MidsContext.Config.I9.IgnoreEnhFX || !iPower) {
+    if (!MidsContext.Config || !currentPowerEntry || !currentPowerEntry.Power || MidsContext.Config.I9.IgnoreEnhFX || !iPower) {
       return;
     }
 
@@ -691,17 +691,14 @@ export class Toon extends Character {
     }
   }
 
-  private GBPA_MultiplyVariable(iPower: IPower, hIDX: number): boolean {
-    if (!iPower || hIDX < 0 || !this.CurrentBuild) {
+  private static GBPA_MultiplyVariable(iPower: IPower, powerEntry: PowerEntry): boolean {
+    if (!iPower || !powerEntry) {
       return false;
     }
 
     if (!iPower.VariableEnabled) {
       return false;
     }
-
-    const powerEntry = this.CurrentBuild.Powers[hIDX];
-    if (!powerEntry) return false;
 
     for (const fx of iPower.Effects) {
       if (fx.VariableModified && !fx.IgnoreScaling) {
