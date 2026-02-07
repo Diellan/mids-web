@@ -3,7 +3,6 @@ import { useDomainStore } from '@/domainStore/useDomainStore';
 import { IEnhancement } from '@/core/IEnhancement';
 import { eType, eEnhGrade } from '@/core/Enums';
 import { OriginGrade } from '@/core/Base/Data_Classes/Origin';
-import { getImgUrl } from '@/utils/getImgUrl';
 
 export interface EnhancementIconProps {
   enhancement: IEnhancement;
@@ -87,23 +86,23 @@ const EnhancementIcon = ({ enhancement, grade = eEnhGrade.None, size = 30 }: Enh
 
   // Build image paths
   const enhancementImagePath = enhancement.Image.indexOf('/') !== -1
-    ? `/src/assets/${enhancement.Image}`
-    : `/src/assets/Enhancements/${enhancement.Image}`;
+    ? `./assets/${enhancement.Image}`
+    : `./assets/Enhancements/${enhancement.Image}`;
 
   const borderImagePath = borderFilename
-    ? `/src/assets/Overlay/${borderFilename}.png`
+    ? `./assets/Overlay/${borderFilename}.png`
     : null;
 
   return (
     <IconContainer iconSize={size}>
       {borderImagePath && (
         <BorderImage
-          src={getImgUrl(borderImagePath)}
+          src={borderImagePath}
           alt=""
         />
       )}
       <EnhancementImage
-        src={getImgUrl(enhancementImagePath)}
+        src={enhancementImagePath}
         alt={enhancement.Name}
       />
     </IconContainer>

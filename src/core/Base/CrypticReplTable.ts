@@ -1,6 +1,7 @@
 // Converted from C# CrypticReplTable.cs
 import { AppDataPaths } from '../AppDataPaths';
 import { DatabaseAPI } from '../DatabaseAPI';
+import { fetchLocal } from '../fetchLocal';
 
 export class CrypticReplTable {
   private _table: Map<string, string> = new Map();
@@ -20,7 +21,7 @@ export class CrypticReplTable {
   static async Initialize(path: string): Promise<void> {
     try {
       const filename = AppDataPaths.SelectDataFileLoad(AppDataPaths.MxdbCrypticReplTable, path);
-      const response = await fetch(filename);
+      const response = await fetchLocal(filename);
       if (!response.ok) {
         throw new Error(`Failed to load CrypticReplTable file: ${filename}`);
       }

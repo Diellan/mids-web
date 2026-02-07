@@ -29,6 +29,7 @@ import { PowersReplTable } from './PowersReplTable';
 import { CrypticReplTable } from './Base/CrypticReplTable';
 import { ConfigData } from './ConfigData';
 import { parseVersion, Version } from './Utils/Helpers';
+import { fetchLocal } from './fetchLocal';
 
 export class DatabaseAPI {
   private static AttribMod: Map<string, number> = new Map();
@@ -1069,7 +1070,7 @@ export class DatabaseAPI {
     let reader: BinaryReader | null = null;
 
     try {
-      const response = await fetch(filePath);
+      const response = await fetchLocal(filePath);
       const buffer = await response.arrayBuffer();
       reader = new BinaryReader(buffer);
     } catch {
@@ -2173,7 +2174,7 @@ export class DatabaseAPI {
     let reader: BinaryReader | null = null;
 
     try {
-      const response = await fetch(filePath);
+      const response = await fetchLocal(filePath);
       const buffer = await response.arrayBuffer();
       reader = new BinaryReader(buffer);
     } catch {
@@ -2346,7 +2347,7 @@ export class DatabaseAPI {
     let reader: BinaryReader | null = null;
 
     try {
-      const response = await fetch(filePath);
+      const response = await fetchLocal(filePath);
       if (!response.ok) {
         console.error('Failed to load enhancement database file!');
         return;
@@ -2445,7 +2446,7 @@ export class DatabaseAPI {
 
     let fileContent: string;
     try {
-      const response = await fetch(filePath);
+      const response = await fetchLocal(filePath);
       if (!response.ok) {
         console.error('Failed to load enhancement classes file!');
         return false;
@@ -2551,7 +2552,7 @@ export class DatabaseAPI {
   static async LoadTypeGrades(iPath?: string): Promise<void> {
     const filePath = AppDataPaths.SelectDataFileLoad(AppDataPaths.JsonFileTypeGrades, iPath);
     try {
-      const response = await fetch(filePath);
+      const response = await fetchLocal(filePath);
       if (!response.ok) {
         console.error('Failed to load TypeGrades file!');
         return;
@@ -2623,7 +2624,7 @@ export class DatabaseAPI {
     let reader: BinaryReader | null = null;
 
     try {
-      const response = await fetch(filePath);
+      const response = await fetchLocal(filePath);
       if (!response.ok) {
         console.error('Failed to load recipe database file!');
         return;
@@ -2700,7 +2701,7 @@ export class DatabaseAPI {
     let reader: BinaryReader | null = null;
 
     try {
-      const response = await fetch(filePath);
+      const response = await fetchLocal(filePath);
       if (!response.ok) {
         console.error('Failed to load salvage database file!');
         return;
@@ -2771,7 +2772,7 @@ export class DatabaseAPI {
 
     let fileContent: string;
     try {
-      const response = await fetch(filePath);
+      const response = await fetchLocal(filePath);
       if (!response.ok) {
         console.error('Failed to load origins database file!');
         return;
@@ -2882,7 +2883,7 @@ export class DatabaseAPI {
 
     let levels: LevelMap[] = [];
     try {
-      const response = await fetch(filePath);
+      const response = await fetchLocal(filePath);
       if (!response.ok) {
         console.error('Failed to load levels database file!');
         return false;
@@ -2946,7 +2947,7 @@ export class DatabaseAPI {
 
     try {
       var effectIds: string[] = [];
-      const response = await fetch(filePath);
+      const response = await fetchLocal(filePath);
       if (!response.ok) {
         console.error('Failed to load effect ids database file!');
         return false;
@@ -3027,7 +3028,7 @@ export class DatabaseAPI {
 
     let fileContent: string;
     try {
-      const response = await fetch(filePath);
+      const response = await fetchLocal(filePath);
       if (!response.ok) {
         console.error('Failed to load enhancement maths file!');
         return false;

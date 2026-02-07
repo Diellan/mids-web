@@ -4,11 +4,9 @@ import ListItem, { ListItemProps } from "@mui/material/ListItem";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import { styled } from "@mui/material";
-import { PowerEntry } from "@/core/PowerEntry";
 import { useDomainStoreInstance } from "@/domainStore/domainStoreContext";
 import PowerSlotEnhancer from "../power-slot-enhancer";
 import { eEnhGrade } from "@/core/Enums";
-import { getImgUrl } from "@/utils/getImgUrl";
 import { useDomainStore } from "@/domainStore/useDomainStore";
 
 interface PowerSlotProps extends CardProps {
@@ -145,7 +143,7 @@ const PowerEnhancer = ({ powerEntryId, ...prop }: { powerEntryId: string }) => {
           <PowerSlotEnhancer slotEntry={slot} key={index} power={powerEntry.Power!} onSetEnhancement={(enhancement, grade) => setEnhancement(enhancement, grade, index)} />
         ))}
         {canPlaceSlot && powerEntry.Slots.length < powerEntry.Power.MaxSlots && (<NewSlot onClick={addSlot}>
-          <img src={getImgUrl(`/src/assets/Newslot.png`)} alt="None" />
+          <img src={`./assets/Newslot.png`} alt="None" />
         </NewSlot>)}
       </Slots>}
     </PowerSlot>

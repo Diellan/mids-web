@@ -142,6 +142,17 @@ async function createWindow() {
   Menu.setApplicationMenu(menu)
 }
 
+// IPC handler for reading local files via Node.js fs
+ipcMain.handle('fs:read-file', async (_, relativePath: string) => {
+  try {
+    const fullPath = path.join(process.env.VITE_PUBLIC!, relativePath)
+    const buffer = fs.readFileSync(fullPath)
+    return buffer
+  } catch {
+    return null
+  }
+})
+
 // IPC handler for saving files via native dialog
 ipcMain.handle('dialog:save-file', async (_, { content, defaultName }) => {
   if (!win) return { filePath: null }

@@ -315,13 +315,6 @@ export function createDomainStore(database?: IDatabase, toon?: Toon): DomainStor
 
           getEnhancement: (enhancementId: number) => get().database.Enhancements[enhancementId],
 
-          getEnhancementImagePath: (enhancementId: number) => {
-            const enhancement = get().database.Enhancements[enhancementId];
-            if (!enhancement) return '/src/assets/Sets/None.png';
-            if (enhancement.Image.indexOf('/') !== -1) return `/src/assets/${enhancement.Image}`;
-            return `/src/assets/Enhancements/${enhancement.Image}`;
-          },
-
           getSetType: (setTypeId: number) => get().database.SetTypes[setTypeId],
 
           getEnhancementSetsByTypeId: (setTypeId: number) => {

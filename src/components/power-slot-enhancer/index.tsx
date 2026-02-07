@@ -7,7 +7,6 @@ import { useState } from "react";
 import { IPower } from "@/core/IPower";
 import { eEnhGrade } from "@/core/Enums";
 import { useDomainStore } from "@/domainStore/useDomainStore";
-import { getImgUrl } from "@/utils/getImgUrl";
 import EnhancementIcon from "@/components/enhancement-icon";
 
 const Slot = styled(ListItem)(({ theme }) => ({
@@ -76,7 +75,7 @@ const PowerSlotEnhancer = ({
             size={30}
           />
         ) : (
-          <img src={getImgUrl('/src/assets/Sets/None.png')} alt="Empty slot" />
+          <img src={'./assets/Sets/None.png'} alt="Empty slot" />
         )}
         <SlotEnhancementLevel>{slotEntry.Enhancement?.GetEnhancementLevelString()}</SlotEnhancementLevel>
         <SlotLevel>{slotEntry.Level+1}</SlotLevel>
