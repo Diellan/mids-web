@@ -19,7 +19,7 @@ function App() {
     }
     hasLoadedRef.current = true;
 
-    DatabaseAPI.LoadAllData('/Databases/Homecoming').then(() => {
+    DatabaseAPI.LoadAllData('Databases/Homecoming').then(() => {
       console.log('Server data loaded successfully');
       console.log(ServerData.Instance);
       console.log(DatabaseAPI.Database);
