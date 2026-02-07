@@ -395,6 +395,7 @@ export class Effect implements IEffect {
         effect.Absorbed_Effect = template.Absorbed_Effect;
         effect.Absorbed_PowerType = template.Absorbed_PowerType;
         effect.Absorbed_Class_nID = template.Absorbed_Class_nID;
+        effect.Absorbed_Power_nID = template.Absorbed_Power_nID;
         effect.Absorbed_Interval = template.Absorbed_Interval;
         effect.Absorbed_EffectID = template.Absorbed_EffectID;
         effect.buffMode = template.buffMode;
@@ -404,10 +405,12 @@ export class Effect implements IEffect {
         effect.UIDClassName = template.UIDClassName;
         effect.nIDClassName = template.nIDClassName;
         effect.Expressions = template.Expressions;
+        effect.MagnitudeExpression = template.MagnitudeExpression;
         effect.Reward = template.Reward;
         effect.EffectId = template.EffectId;
         effect.IgnoreED = template.IgnoreED;
         effect.Override = template.Override;
+        effect.Special = template.Special;
         effect.PowerAttribs = template.PowerAttribs;
         effect.AtrOrigAccuracy = template.AtrOrigAccuracy;
         effect.AtrOrigActivatePeriod = template.AtrOrigActivatePeriod;

@@ -12,6 +12,7 @@ import type { I9Slot } from './I9Slot';
 import { Power } from './Base/Data_Classes/Power';
 import { PowerGrantsMap } from './PowerGrantsMap';
 import { Statistics } from './Statistics';
+import { PowerEntry } from './PowerEntry';
 
 // Private structs converted to interfaces/classes
 interface FxIdentifierKey {
@@ -520,17 +521,17 @@ export class Toon extends Character {
       power2.Stacks = this.CurrentBuild.Powers[hIDX]!.VariableValue;
     }
     
-    power2 = this.GBPA_ApplyPowerOverride(power2);
-    this.GBPA_AddEnhFX(power2, hIDX);
+    power2 = Toon.GBPA_ApplyPowerOverride(power2);
+    Toon.GBPA_AddEnhFX(power2, this.CurrentBuild!.Powers[hIDX]);
     power2.AbsorbPetEffects(hIDX, stackingOverride);
     power2.ApplyGrantPowerEffects();
-    this.GBPA_AddSubPowerEffects(power2, hIDX);
+    Toon.GBPA_AddSubPowerEffects(power2, this.CurrentBuild!.Powers[hIDX]);
     power2.ApplyModifyEffects();
 
     return power2;
   }
 
-  private GBPA_ApplyPowerOverride(ret: IPower): IPower {
+  private static GBPA_ApplyPowerOverride(ret: IPower): IPower {
     if (!ret.HasPowerOverrideEffect) {
       return ret;
     }
@@ -550,13 +551,8 @@ export class Toon extends Character {
     return ret;
   }
 
-  private GBPA_AddEnhFX(iPower: IPower | null, iIndex: number): void {
-    if (!MidsContext.Config || !this.CurrentBuild || MidsContext.Config.I9.IgnoreEnhFX || iIndex < 0 || !iPower) {
-      return;
-    }
-
-    const currentPowerEntry = this.CurrentBuild.Powers[iIndex];
-    if (!currentPowerEntry?.Power) {
+  private static GBPA_AddEnhFX(iPower: IPower | null, currentPowerEntry: PowerEntry): void {
+    if (!MidsContext.Config || !currentPowerEntry.Power || MidsContext.Config.I9.IgnoreEnhFX || !iPower) {
       return;
     }
 
@@ -642,19 +638,13 @@ export class Toon extends Character {
     effectsList.push(clonedEffect);
   }
 
-  private GBPA_AddSubPowerEffects(ret: IPower, hIDX: number): boolean {
+  private static GBPA_AddSubPowerEffects(ret: IPower, powerEntry: PowerEntry): boolean {
     if (!ret.NIDSubPower || ret.NIDSubPower.length <= 0) {
       return false;
     }
     
-    let length = ret.Effects.length;
-    if (hIDX < 0 || !this.CurrentBuild) {
-      return false;
-    }
-    
+    let length = ret.Effects.length;    
     let effectCount = 0;
-    const powerEntry = this.CurrentBuild.Powers[hIDX];
-    if (!powerEntry) return false;
     
     for (let index = 0; index < powerEntry.SubPowers.length; index++) {
       const subPower = powerEntry.SubPowers[index];
@@ -1365,7 +1355,7 @@ export class Toon extends Character {
           Toon.HandleDefaultIncarnateEnh(powerMath, effect1);
         }
       } else {
-        powerMath.AbsorbEffects(power1, effect1.Duration, 0, this.Archetype, 1, true, effIdx, effIdx);
+        powerMath.AbsorbEffects(sourcePower, effect1.Duration, 0, this.Archetype, 1, true, effIdx, effIdx);
         
         const lastEffect = powerMath.Effects[powerMath.Effects.length - 1];
         if (lastEffect) {
@@ -1376,7 +1366,7 @@ export class Toon extends Character {
         }
 
         if (hIDX > -1 && this._buffedPowers[hIDX]) {
-          this._buffedPowers[hIDX]!.AbsorbEffects(power1, effect1.Duration, 0, this.Archetype, 1, true, effIdx, effIdx);
+          this._buffedPowers[hIDX]!.AbsorbEffects(sourcePower, effect1.Duration, 0, this.Archetype, 1, true, effIdx, effIdx);
           
           const buffedLastEffect = this._buffedPowers[hIDX]!.Effects[this._buffedPowers[hIDX]!.Effects.length - 1];
           if (buffedLastEffect) {
