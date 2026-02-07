@@ -16,16 +16,16 @@ export class Interval {
     /// </summary>
     /// <param name="start">Start value</param>
     /// <param name="end">End value</param>
-    constructor(start: number, end?: number) {
-        if (end === undefined) {
-            // Build an interval from end value only (e.g. duration), assume start = 0
-            this.Start = 0;
-            this.End = start;
-        } else if (start instanceof Interval) {
+    constructor(start: number | Interval, end?: number) {
+        if (start instanceof Interval) {
             // Build an interval from another one, copy values
             const baseInterval = start as Interval;
             this.Start = Math.min(baseInterval.Start, baseInterval.End);
             this.End = Math.max(baseInterval.Start, baseInterval.End);
+        } else if (end === undefined) {
+            // Build an interval from end value only (e.g. duration), assume start = 0
+            this.Start = 0;
+            this.End = start;
         } else {
             this.Start = Math.min(start, end);
             this.End = Math.max(start, end);

@@ -100,7 +100,7 @@ const DataViewerInfo = ({ power }: { power: PowerEntry }) => {
 
       <Grid container spacing={2}>
         {dataItems.map((item, index) => (
-          <Grid item xs={12} sm={6} key={index}>
+          <Grid key={index}>
             <Paper sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Box>
                 <Typography variant="body2" color="text.secondary">

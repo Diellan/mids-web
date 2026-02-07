@@ -24,7 +24,13 @@ export class EnhancementDataConverter {
             return null; // Return null to indicate no enhancement data
         }
 
-        const enhancementData = new EnhancementData();
+        const enhancementData: EnhancementData = {
+            Uid: '',
+            Grade: '',
+            IoLevel: 0,
+            RelativeLevel: '',
+            Obtained: false
+        };
 
         if (jsonValue.Uid !== undefined) {
             enhancementData.Uid = jsonValue.Uid;
@@ -52,7 +58,7 @@ export class EnhancementDataConverter {
     }
 
     static CanConvert(objectType: any): boolean {
-        return objectType === EnhancementData;
+        return objectType === Object; // In TypeScript, we can check if it's an object type
     }
 }
 

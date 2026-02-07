@@ -1,9 +1,9 @@
 // Converted from C# StatsPowerData.cs
-import type { IPower } from '../type/power';
 import { eSpeedMeasure, eDamage, eMez, eEffectType } from './Enums';
 import { MidsContext } from './Base/Master_Classes/MidsContext';
 import { Statistics } from './Statistics';
 import { DatabaseAPI } from './DatabaseAPI';
+import { IPower } from './IPower';
 
 export interface PowerValueInfo {
   PowerName: string;

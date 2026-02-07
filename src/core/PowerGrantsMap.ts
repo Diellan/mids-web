@@ -1,7 +1,7 @@
 // Converted from C# PowerGrantsMap.cs
-import type { IPower } from '../type/power';
-import type { IEffect } from '../type/effect';
 import { eEffectType } from './Enums';
+import { IEffect } from './IEffect';
+import { IPower } from './IPower';
 
 export interface GrantCount {
   Probability: number;

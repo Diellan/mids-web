@@ -1,9 +1,9 @@
 // Converted from C# IEnhancement.cs
-import type { IPower } from '../type/power';
 import { eType, eEnhMutex, eBuffDebuff, eEffMode, eSchedule } from './Enums';
 import type { sTwinID } from './Enums';
 import type { IEffect } from './IEffect';
 import type { EnhancementSet } from './EnhancementSet';
+import { IPower } from './IPower';
 
 export interface sEffect {
   Mode: eEffMode;

@@ -31,7 +31,7 @@ const DataViewerEnhance = () => {
       ) : (
         <Grid container spacing={1}>
           {enhancements.map((slot, index) => (
-            <Grid item xs={12} key={index}>
+            <Grid key={index}>
               <Paper sx={{ p: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box>

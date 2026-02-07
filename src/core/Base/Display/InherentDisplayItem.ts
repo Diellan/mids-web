@@ -1,5 +1,6 @@
 // Converted from C# InherentDisplayItem.cs
-import type { IPower } from '../../../type/power';
+
+import { IPower } from "@/core/IPower";
 
 export class InherentDisplayItem {
   Priority: number = 0;
