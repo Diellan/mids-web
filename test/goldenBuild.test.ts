@@ -294,7 +294,7 @@ describe("Golden Mids build comparisons", async () => {
     const initialDef = [...initialTotals.Def];
 
     // Toggle the power off
-    store.toggleStatInclude(togglePower!.id);
+    await store.toggleStatInclude(togglePower!.id);
     expect(togglePower!.StatInclude).toBe(false);
 
     // Totals should have changed — defense should be lower
@@ -303,7 +303,7 @@ describe("Golden Mids build comparisons", async () => {
     expect(defDecreased).toBe(true);
 
     // Toggle back on — totals should match initial
-    store.toggleStatInclude(togglePower!.id);
+    await store.toggleStatInclude(togglePower!.id);
     expect(togglePower!.StatInclude).toBe(true);
 
     const restoredTotals = store.getTotalStatistics();
@@ -329,7 +329,7 @@ describe("Golden Mids build comparisons", async () => {
     expect(deflection).toBeTruthy();
 
     // Toggle it on
-    store.toggleStatInclude(deflection!.id);
+    await store.toggleStatInclude(deflection!.id);
     expect(deflection!.StatInclude).toBe(true);
 
     // Defense should increase
@@ -352,9 +352,49 @@ describe("Golden Mids build comparisons", async () => {
     expect(clickPower).toBeTruthy();
     const wasIncluded = clickPower!.StatInclude;
 
-    store.toggleStatInclude(clickPower!.id);
+    await store.toggleStatInclude(clickPower!.id);
 
     // Should not have changed
     expect(clickPower!.StatInclude).toBe(wasIncluded);
+  });
+
+  it("toggleStatInclude triggers store subscription with updated totals", async () => {
+    const db = DatabaseAPI.Database;
+    const buildFile = "test-data/builds/Lorenzo (Electrical Melee - Shield Defense).mbd";
+    const storeApi = createDomainStore(db);
+    const store = storeApi.getState();
+    await store.loadBuildFile(buildFile);
+
+    // Find Deflection toggle
+    const powers = store.getPowers();
+    const deflection = powers.find(
+      p => p && p.StatInclude && p.CanIncludeForStats() && p.Power?.DisplayName === "Deflection"
+    );
+    expect(deflection).toBeTruthy();
+
+    // Record initial defense from store state
+    const initialDef = [...storeApi.getState().totals.Def];
+
+    // Track subscription updates
+    let subscriptionCallCount = 0;
+    let lastTotals: typeof store.totals | null = null;
+
+    const unsubscribe = storeApi.subscribe((state) => {
+      subscriptionCallCount++;
+      lastTotals = state.totals;
+    });
+
+    // Toggle off
+    await store.toggleStatInclude(deflection!.id);
+
+    // Should have notified subscribers
+    expect(subscriptionCallCount).toBeGreaterThan(0);
+    expect(lastTotals).not.toBeNull();
+
+    // The subscribed totals should show decreased defense
+    const defDecreased = initialDef.some((d, i) => d > lastTotals!.Def[i]);
+    expect(defDecreased).toBe(true);
+
+    unsubscribe();
   });
 });

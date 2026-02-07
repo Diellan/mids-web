@@ -13,7 +13,8 @@
       "Bash(findstr:*)",
       "Bash(Select-String -Pattern \"BuildManager|DomainStore|App\\\\.tsx|main[/\\\\]index\")",
       "Bash(dir:*)",
-      "Bash(npx vitest run:*)"
+      "Bash(npx vitest run:*)",
+      "Bash(pnpm run build:*)"
     ]
   }
 }

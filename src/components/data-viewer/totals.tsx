@@ -3,7 +3,7 @@ import { Box, Typography, Grid, Paper } from "@mui/material";
 import { eDamage, eMez } from "@/core/Enums";
 
 const DataViewerTotals = () => {
-  const totals = useDomainStore(store => store.getTotalStatistics());
+  const totals = useDomainStore(store => store.totals);
 
   const formatStat = (value: number, multiplier: number = 100, suffix: string = '%') => {
     return `${(value * multiplier).toFixed(1)}${suffix}`;

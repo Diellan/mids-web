@@ -42,15 +42,15 @@ export interface DomainStoreState {
 
   // Character
   getCharacterName: () => string;
-  setCharacterName: (name: string) => void;
+  setCharacterName: (name: string) => Promise<void>;
   getCharacterArchetype: () => Archetype | null;
-  setCharacterArchetype: (archetype: Archetype) => void;
+  setCharacterArchetype: (archetype: Archetype) => Promise<void>;
   getCharacterOrigin: () => Origin | null;
-  setCharacterOrigin: (origin: Origin) => void;
+  setCharacterOrigin: (origin: Origin) => Promise<void>;
 
   // Powersets
   getPowersetByIndex: (index: number) => IPowerset | null;
-  setPowerset: (powersetName: string, index: number) => void;
+  setPowerset: (powersetName: string, index: number) => Promise<void>;
   getPrimaryPowerSetOptions: () => IPowerset[];
   getSecondaryPowerSetOptions: () => IPowerset[];
   getPowerPoolOptions: () => IPowerset[];
@@ -61,11 +61,11 @@ export interface DomainStoreState {
   // Powers
   getPowers: () => (PowerEntry | null)[];
   getPowerEntryById: (id: string) => PowerEntry | null;
-  togglePower: (power: IPower) => void;
-  toggleStatInclude: (powerEntryId: string) => void;
-  toggleProcInclude: (powerEntryId: string) => void;
+  togglePower: (power: IPower) => Promise<void>;
+  toggleStatInclude: (powerEntryId: string) => Promise<void>;
+  toggleProcInclude: (powerEntryId: string) => Promise<void>;
   getHighlightedPower: () => PowerEntry | null;
-  setHighlightedPower: (power: PowerEntry) => void;
+  setHighlightedPower: (power: PowerEntry) => Promise<void>;
   getBasePower: () => IPower | null;
   getEnhancedPower: () => IPower | null;
   getPowerEffects: (power: PowerEntry | null) => Array<{ key: GroupedFx; value: PairedListItem }>;
@@ -76,11 +76,11 @@ export interface DomainStoreState {
   getEnhancementImagePath: (enhancementId: number) => string;
   getSetType: (setTypeId: number) => TypeGrade;
   getEnhancementSetsByTypeId: (setTypeId: number) => EnhancementSetCollection;
-  pickEnhancement: (enhancementIndex: number, grade: eEnhGrade, powerEntryId: string, slotIndex: number) => void;
+  pickEnhancement: (enhancementIndex: number, grade: eEnhGrade, powerEntryId: string, slotIndex: number) => Promise<void>;
 
   // Slots
   canPlaceSlot: () => boolean;
-  addSlot: (powerEntryId: string) => void;
+  addSlot: (powerEntryId: string) => Promise<void>;
 
   // Statistics
   getTotalStatistics: () => TotalStatistics;
@@ -167,10 +167,10 @@ export function createDomainStore(database?: IDatabase, toon?: Toon): DomainStor
   return createStore<DomainStoreState>()(
     devtools(
       (set, get) => {
-        const notify = (action?: string, extraState?: Partial<DomainStoreState>) => {
+        const notify = async (action?: string, extraState?: Partial<DomainStoreState>) => {
           const state = get();
           const toon = extraState?.toon ?? state.toon;
-          toon.GenerateBuffedPowerArray();
+          await toon.GenerateBuffedPowerArray();
           const hp = extraState && 'highlightedPower' in extraState
             ? extraState.highlightedPower
             : state.highlightedPower;
@@ -207,20 +207,20 @@ export function createDomainStore(database?: IDatabase, toon?: Toon): DomainStor
 
           getCharacterName: () => get().toon.Name,
 
-          setCharacterName: (name: string) => {
+          setCharacterName: async (name: string) => {
             const { toon } = get();
             if (toon.Name === name) return;
             toon.Name = name;
-            notify('setCharacterName');
+            await notify('setCharacterName');
           },
 
           getCharacterArchetype: () => get().toon.Archetype,
 
-          setCharacterArchetype: (archetype: Archetype) => {
+          setCharacterArchetype: async (archetype: Archetype) => {
             const { toon, database } = get();
             if (toon.Archetype?.ClassName === archetype.ClassName) return;
             toon.Reset(archetype);
-            notify('setCharacterArchetype', computeAllPowersetOptions(toon, database));
+            await notify('setCharacterArchetype', computeAllPowersetOptions(toon, database));
           },
 
           getCharacterOrigin: () => {
@@ -228,19 +228,19 @@ export function createDomainStore(database?: IDatabase, toon?: Toon): DomainStor
             return database.Origins[toon.Origin];
           },
 
-          setCharacterOrigin: (origin: Origin) => {
+          setCharacterOrigin: async (origin: Origin) => {
             const { toon, database } = get();
             const newIndex = database.Origins.findIndex(o => o.Name === origin.Name);
             if (toon.Origin === newIndex) return;
             toon.Origin = newIndex;
-            notify('setCharacterOrigin');
+            await notify('setCharacterOrigin');
           },
 
           // --- Powersets ---
 
           getPowersetByIndex: (index: number) => get().toon.Powersets[index] ?? null,
 
-          setPowerset: (powersetName: string, index: number) => {
+          setPowerset: async (powersetName: string, index: number) => {
             const { toon, database } = get();
             if (toon.Powersets[index]?.SetName === powersetName) return;
             const powerset = database.Powersets.find(p => p.SetName === powersetName);
@@ -250,7 +250,7 @@ export function createDomainStore(database?: IDatabase, toon?: Toon): DomainStor
             }
             toon.Powersets[index] = powerset;
             toon.Validate();
-            notify('setPowerset');
+            await notify('setPowerset');
           },
 
           getPrimaryPowerSetOptions: () => get().primaryOptions,
@@ -268,31 +268,31 @@ export function createDomainStore(database?: IDatabase, toon?: Toon): DomainStor
             return get().powers.find(p => p && p.id === id) ?? null;
           },
 
-          togglePower: (power: IPower) => {
+          togglePower: async (power: IPower) => {
             get().toon.BuildPower(power.PowerSetID, power.PowerIndex);
-            notify('togglePower');
+            await notify('togglePower');
           },
 
-          toggleStatInclude: (powerEntryId: string) => {
+          toggleStatInclude: async (powerEntryId: string) => {
             const pe = get().powers.find(p => p && p.id === powerEntryId);
             if (pe && pe.CanIncludeForStats()) {
               pe.StatInclude = !pe.StatInclude;
-              notify('toggleStatInclude');
+              await notify('toggleStatInclude');
             }
           },
 
-          toggleProcInclude: (powerEntryId: string) => {
+          toggleProcInclude: async (powerEntryId: string) => {
             const pe = get().powers.find(p => p && p.id === powerEntryId);
             if (pe && pe.HasProc()) {
               pe.ProcInclude = !pe.ProcInclude;
-              notify('toggleProcInclude');
+              await notify('toggleProcInclude');
             }
           },
 
           getHighlightedPower: () => get().highlightedPower,
 
-          setHighlightedPower: (power: PowerEntry) => {
-            notify('setHighlightedPower', { highlightedPower: power });
+          setHighlightedPower: async (power: PowerEntry) => {
+            await notify('setHighlightedPower', { highlightedPower: power });
           },
 
           getBasePower: () => get().basePower,
@@ -328,7 +328,7 @@ export function createDomainStore(database?: IDatabase, toon?: Toon): DomainStor
             return get().database.EnhancementSets.filter(s => s.SetType === setTypeId) as EnhancementSetCollection;
           },
 
-          pickEnhancement: (enhancementIndex: number, grade: eEnhGrade, powerEntryId: string, slotIndex: number) => {
+          pickEnhancement: async (enhancementIndex: number, grade: eEnhGrade, powerEntryId: string, slotIndex: number) => {
             const { toon, database } = get();
             console.debug(`Picking enhancement ${enhancementIndex} (grade ${eEnhGrade[grade]}) for power index ${powerEntryId}, slot index ${slotIndex}`);
             const enhancement = database.Enhancements[enhancementIndex];
@@ -345,16 +345,16 @@ export function createDomainStore(database?: IDatabase, toon?: Toon): DomainStor
             i9Slot.IOLevel = 0;
             power.Slots[slotIndex] = new SlotEntry();
             power.Slots[slotIndex].Enhancement = i9Slot;
-            notify('pickEnhancement');
+            await notify('pickEnhancement');
           },
 
           // --- Slots ---
 
           canPlaceSlot: () => get().toon.CanPlaceSlot,
 
-          addSlot: (powerEntryId: string) => {
+          addSlot: async (powerEntryId: string) => {
             get().toon.BuildSlot(powerEntryId);
-            notify('addSlot');
+            await notify('addSlot');
           },
 
           // --- Statistics ---
@@ -375,7 +375,7 @@ export function createDomainStore(database?: IDatabase, toon?: Toon): DomainStor
             MidsContext.Character = newToon;
             MidsContext.Archetype = newToon.Archetype;
             MidsContext.Build = newToon.CurrentBuild;
-            newToon.GenerateBuffedPowerArray();
+            await newToon.GenerateBuffedPowerArray();
             set(s => ({
               toon: newToon,
               _version: s._version + 1,
@@ -394,7 +394,7 @@ export function createDomainStore(database?: IDatabase, toon?: Toon): DomainStor
             MidsContext.Character = newToon;
             MidsContext.Archetype = newToon.Archetype;
             MidsContext.Build = newToon.CurrentBuild;
-            newToon.GenerateBuffedPowerArray();
+            await newToon.GenerateBuffedPowerArray();
             set(s => ({
               toon: newToon,
               _version: s._version + 1,
