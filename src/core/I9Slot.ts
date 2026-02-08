@@ -516,7 +516,7 @@ export class I9Slot {
     }
 
     if (this.IOLevel) {
-      return this.IOLevel.toString();
+      return (this.IOLevel + 1).toString();
     }
 
     return this.GetRelativeString(false);
