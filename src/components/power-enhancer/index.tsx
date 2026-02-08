@@ -24,7 +24,7 @@ const PowerSlot = styled(Card, { shouldForwardProp: (prop) => prop !== 'picked' 
   marginBottom: theme.spacing(7),
   paddingTop: 0,
   paddingLeft: theme.spacing(2),
-  paddingRight: theme.spacing(1),
+  paddingRight: theme.spacing(2),
   paddingBottom: 0,
   position: 'relative',
   overflow: 'visible',

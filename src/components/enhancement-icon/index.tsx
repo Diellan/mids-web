@@ -82,6 +82,9 @@ const EnhancementIcon = ({ enhancement, grade = eEnhGrade.None, size = 30 }: Enh
   let borderFilename: string | null = null;
   if (originGrade !== OriginGrade.None && origin && origin.Grades) {
     borderFilename = origin.Grades[originGrade];
+  } else if (enhancement.TypeID === eType.SetO) {
+    // For SetO, use the SetO border if available
+    borderFilename = 'SetO';
   }
 
   // Build image paths
