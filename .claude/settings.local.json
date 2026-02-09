@@ -14,7 +14,8 @@
       "Bash(Select-String -Pattern \"BuildManager|DomainStore|App\\\\.tsx|main[/\\\\]index\")",
       "Bash(dir:*)",
       "Bash(npx vitest run:*)",
-      "Bash(pnpm run build:*)"
+      "Bash(pnpm run build:*)",
+      "Bash(node:*)"
     ]
   }
 }

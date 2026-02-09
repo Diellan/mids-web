@@ -1,6 +1,7 @@
 import { describe, it, beforeAll, expect, vi } from "vitest";
 import { DatabaseAPI } from "../src/core/DatabaseAPI";
 import { BuildManager } from "../src/core/BuildFile/BuildManager";
+
 import { createDomainStore } from "../src/domainStore/DomainStore";
 
 import path from "node:path";
@@ -33,6 +34,9 @@ global.fetch = vi.fn(async (url: URL | RequestInfo) => {
 
 const BUILD_FILE =
   "test-data/builds/Lorenzo (Electrical Melee - Shield Defense).mbd";
+const OLD_MBD_FILE = "test-data/builds/old mbd format.mbd";
+const MXD_FILE =
+  "test-data/builds/Lorenzo (Electrical Melee - Shield Defense).mxd";
 
 describe("Open and Save", () => {
   beforeAll(async () => {
@@ -152,6 +156,92 @@ describe("Open and Save", () => {
       expect(storeFromContent.getPowers().length).toBe(
         storeFromFile.getPowers().length
       );
+    });
+  });
+
+  describe("Old MBD format (Enhancement name instead of Uid)", () => {
+    it("loads a build using the old Enhancement name format", async () => {
+      const filePath = path.resolve(__dirname, OLD_MBD_FILE);
+      const content = await fs.readFile(filePath, "utf-8");
+
+      const toon = await BuildManager.Instance.LoadFromContent(content);
+
+      expect(toon).not.toBeNull();
+      expect(toon.Name).toBe("Angra");
+      expect(toon.Archetype?.DisplayName).toBe("Corruptor");
+    });
+
+    it("resolves Enhancement names to valid Uids via EnhancementDataConverter", async () => {
+      const filePath = path.resolve(__dirname, OLD_MBD_FILE);
+      const content = await fs.readFile(filePath, "utf-8");
+
+      const toon = await BuildManager.Instance.LoadFromContent(content);
+      const powers = toon.CurrentBuild!.Powers;
+      const slottedPower = powers.find(
+        (p) => p?.Power?.FullName === "Corruptor_Ranged.Fire_Blast.Fire_Blast"
+      );
+
+      expect(slottedPower).toBeDefined();
+      expect(slottedPower!.Slots.length).toBeGreaterThan(0);
+      expect(slottedPower!.Slots[0].Enhancement.Enh).toBeGreaterThanOrEqual(0);
+    });
+
+    it("round-trips: old format load then save then load preserves character", async () => {
+      const filePath = path.resolve(__dirname, OLD_MBD_FILE);
+      const content = await fs.readFile(filePath, "utf-8");
+
+      const toon1 = await BuildManager.Instance.LoadFromContent(content);
+      const serialized = BuildManager.Instance.SerializeBuild(toon1);
+      const toon2 = await BuildManager.Instance.LoadFromContent(serialized);
+
+      expect(toon2.Name).toBe(toon1.Name);
+      expect(toon2.Archetype?.DisplayName).toBe(toon1.Archetype?.DisplayName);
+      expect(toon2.CurrentBuild?.Powers.length).toBe(
+        toon1.CurrentBuild?.Powers.length
+      );
+    });
+  });
+
+  describe("MXD format import via LoadFromContent", () => {
+    it("loads a build from raw MXD file content", async () => {
+      const filePath = path.resolve(__dirname, MXD_FILE);
+      const fileContent = await fs.readFile(filePath, "utf-8");
+
+      const toon = await BuildManager.Instance.LoadFromContent(fileContent);
+
+      expect(toon).not.toBeNull();
+      expect(toon.Name).toBe("Lorenzo Mondavi");
+      expect(toon.Archetype?.DisplayName).toBe("Brute");
+    });
+
+    it("has slotted enhancements after MXD import", async () => {
+      const filePath = path.resolve(__dirname, MXD_FILE);
+      const fileContent = await fs.readFile(filePath, "utf-8");
+
+      const toon = await BuildManager.Instance.LoadFromContent(fileContent);
+
+      const powers = toon.CurrentBuild!.Powers;
+      const slottedPower = powers.find(
+        (p) =>
+          p?.Power?.FullName ===
+          "Brute_Melee.Electrical_Melee.Charged_Brawl"
+      );
+
+      expect(slottedPower).toBeDefined();
+      expect(slottedPower!.Slots.length).toBeGreaterThan(0);
+      expect(slottedPower!.Slots[0].Enhancement.Enh).toBeGreaterThanOrEqual(0);
+    });
+
+    it("loads MXD into DomainStore via loadBuildFromContent", async () => {
+      const db = DatabaseAPI.Database;
+      const filePath = path.resolve(__dirname, MXD_FILE);
+      const fileContent = await fs.readFile(filePath, "utf-8");
+
+      const store = createDomainStore(db).getState();
+      await store.loadBuildFromContent(fileContent);
+
+      expect(store.getCharacterName()).toBe("Lorenzo Mondavi");
+      expect(store.getCharacterArchetype()?.DisplayName).toBe("Brute");
     });
   });
 

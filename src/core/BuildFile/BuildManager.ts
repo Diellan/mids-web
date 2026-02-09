@@ -131,8 +131,9 @@ export class BuildManager {
         let parsed: CharacterBuildData;
         try {
             parsed = JSON.parse(content);
-        } catch (ex: any) {
-            throw new Error(`Failed to parse build data: ${ex.message}`);
+        } catch {
+            // Not JSON — try MXD/MBD import format
+            return this.LoadFromImportContent(content);
         }
 
         try {
@@ -422,6 +423,41 @@ export class BuildManager {
         }
     }
 
+    private async LoadFromImportContent(content: string): Promise<Toon> {
+        const data = this.ExtractImportData(content);
+
+        const classification = DataClassifier.ClassifyAndExtractData(data);
+        if (!classification.IsValid) {
+            throw new Error('Failed to parse build data: unrecognized format');
+        }
+
+        // Ensure MidsContext.Character is initialized for MxDReadSaveData
+        if (!MidsContext.Character) {
+            MidsContext.Character = new Toon();
+        }
+
+        const character = await this.ValidateAndLoadImportData(classification);
+        return character as Toon;
+    }
+
+    private ExtractImportData(content: string): string {
+        const lines = content.split(/\r?\n/);
+        const startIdx = lines.findIndex(
+            (l) => l.startsWith('|MxDz;') || l.startsWith('|MBD;')
+        );
+        if (startIdx === -1) {
+            return content;
+        }
+
+        const separator = '|-------------------------------------------------------------------|';
+        const endIdx = lines.indexOf(separator, startIdx + 1);
+        if (endIdx === -1) {
+            return lines.slice(startIdx).join('\r\n');
+        }
+
+        return lines.slice(startIdx, endIdx).join('\r\n');
+    }
+
     private DeserializeCharacterBuildData(parsed: CharacterBuildData): CharacterBuildData | null {
         try {
             const buildData = new CharacterBuildData();
@@ -434,8 +470,20 @@ export class BuildManager {
             buildData.Comment = parsed.Comment || null;
             buildData.PowerSets = parsed.PowerSets || [];
             buildData.LastPower = parsed.LastPower || 0;
-            buildData.PowerEntries = parsed.PowerEntries || [];
             buildData.BuiltWith = parsed.BuiltWith || null;
+
+            buildData.PowerEntries = (parsed.PowerEntries || []).map(powerEntry => {
+                if (powerEntry === null) return null;
+                return {
+                    ...powerEntry,
+                    SlotEntries: (powerEntry.SlotEntries || []).map(slot => ({
+                        ...slot,
+                        Enhancement: EnhancementDataConverter.ReadJson(slot.Enhancement),
+                        FlippedEnhancement: EnhancementDataConverter.ReadJson(slot.FlippedEnhancement),
+                    })),
+                };
+            });
+
             return buildData;
         } catch (ex: any) {
             console.error('Failed to deserialize CharacterBuildData:', ex);
