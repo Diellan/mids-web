@@ -6,6 +6,7 @@ import Box from "@mui/material/Box";
 import { styled } from "@mui/material";
 import { useDomainStoreInstance } from "@/domainStore/domainStoreContext";
 import PowerSlotEnhancer from "../power-slot-enhancer";
+import AssetImage from '@/components/asset-image';
 import { eEnhGrade } from "@/core/Enums";
 import { useDomainStore } from "@/domainStore/useDomainStore";
 
@@ -139,7 +140,7 @@ const PowerEnhancer = ({ powerEntryId, ...prop }: { powerEntryId: string }) => {
           <PowerSlotEnhancer slotEntry={slot} key={index} power={powerEntry.Power!} onSetEnhancement={(enhancement, grade) => setEnhancement(enhancement, grade, index)} />
         ))}
         {canPlaceSlot && powerEntry.Slots.length < powerEntry.Power.MaxSlots && (<NewSlot onClick={addSlot}>
-          <img src={`./assets/Newslot.png`} alt="None" />
+          <AssetImage src={`./assets/Newslot.png`} alt="None" />
         </NewSlot>)}
       </Slots>}
     </PowerSlot>

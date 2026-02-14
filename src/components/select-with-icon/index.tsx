@@ -3,6 +3,7 @@ import Select, { SelectProps } from "@mui/material/Select";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import Typography from "@mui/material/Typography";
+import AssetImage from '@/components/asset-image';
 
 const SelectWithIcon = ({
   label,
@@ -21,7 +22,7 @@ const SelectWithIcon = ({
         label={label}
         renderValue={() => (<div style={{ display: "flex", alignItems: "center" }}>
             {selected && (
-              <img
+              <AssetImage
                 src={`./assets/${selected.icon}`}
                 alt={selected.name}
                 loading="lazy"
@@ -37,7 +38,7 @@ const SelectWithIcon = ({
     {options.map(selectedOption => (
         <MenuItem value={selectedOption.key} key={selectedOption.key}>
           <ListItemIcon>
-              <img
+              <AssetImage
               src={`./assets/${selectedOption.icon}`}
               alt={selectedOption.name}
               loading="lazy"

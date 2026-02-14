@@ -8,6 +8,7 @@ import { useDomainStore } from '@/domainStore/useDomainStore';
 import EnhancementIcon from '@/components/enhancement-icon';
 import { useDomainStoreInstance } from '@/domainStore/domainStoreContext';
 import { EnhancementSet } from '@/core/EnhancementSet';
+import AssetImage from '@/components/asset-image';
 
 export interface EnhancementPickerProps {
   open: boolean;
@@ -272,7 +273,7 @@ const EnhancementPicker = (props: EnhancementPickerProps) => {
     <TypeTabRow>
       {([eType.Normal, eType.InventO, eType.SpecialO, eType.SetO] as eType[]).map(type => (
         <TypeTab key={type} selected={selectedType === type} onClick={() => handleTypeChange(type)} title={eType[type]}>
-          <img src={`./assets/Sets/${typeIconMap[type]}`} alt={eType[type]} style={{ width: 36, height: 36 }} />
+          <AssetImage src={`./assets/Sets/${typeIconMap[type]}`} alt={eType[type]} style={{ width: 36, height: 36 }} />
         </TypeTab>
       ))}
     </TypeTabRow>
@@ -304,7 +305,7 @@ const EnhancementPicker = (props: EnhancementPickerProps) => {
               onClick={() => { setSelectedSetType(typeId); setHighlightedSet(null); }}
               title={info?.Name ?? `Type ${typeId}`}
             >
-              <img src={`./assets/Sets/${info?.ShortName ?? 'Untyped'}.png`} alt={info?.Name} style={{ width: 30, height: 30 }} />
+              <AssetImage src={`./assets/Sets/${info?.ShortName ?? 'Untyped'}.png`} alt={info?.Name} style={{ width: 30, height: 30 }} />
             </SubTypeChip>
           );
         })}
@@ -320,7 +321,7 @@ const EnhancementPicker = (props: EnhancementPickerProps) => {
         {([eEnhGrade.TrainingO, eEnhGrade.DualO, eEnhGrade.SingleO] as eEnhGrade[]).map(grade => (
           <SubTypeChip key={grade} selected={selectedGrade === grade} onClick={() => setSelectedGrade(grade)} title={eEnhGrade[grade]}>
             <GradeFrame grade={grade}>
-                <img src={`./assets/Sets/${gradeIconMap[grade]}`} alt={eEnhGrade[grade]} style={{ width: 36, height: 36 }} />
+                <AssetImage src={`./assets/Sets/${gradeIconMap[grade]}`} alt={eEnhGrade[grade]} style={{ width: 36, height: 36 }} />
             </GradeFrame>
           </SubTypeChip>
         ))}
@@ -371,7 +372,7 @@ const EnhancementPicker = (props: EnhancementPickerProps) => {
               title={set.DisplayName}
             >
                 <GradeFrame grade={eEnhGrade.None}>
-                    <img
+                    <AssetImage
                         src={`./assets/Enhancements/${set.Image}`}
                         alt={set.DisplayName}
                         style={{ width: 30, height: 30 }}

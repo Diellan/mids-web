@@ -8,6 +8,7 @@ import { IPower } from "@/core/IPower";
 import { eEnhGrade } from "@/core/Enums";
 import { useDomainStore } from "@/domainStore/useDomainStore";
 import EnhancementIcon from "@/components/enhancement-icon";
+import AssetImage from '@/components/asset-image';
 
 const Slot = styled(ListItem)(({ theme }) => ({
   borderRadius: 20,
@@ -75,7 +76,7 @@ const PowerSlotEnhancer = ({
             size={30}
           />
         ) : (
-          <img src={'./assets/Sets/None.png'} alt="Empty slot" />
+          <AssetImage src={'./assets/Sets/None.png'} alt="Empty slot" />
         )}
         <SlotEnhancementLevel>{slotEntry.Enhancement?.GetEnhancementLevelString()}</SlotEnhancementLevel>
         <SlotLevel>{slotEntry.Level+1}</SlotLevel>

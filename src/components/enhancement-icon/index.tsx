@@ -3,6 +3,7 @@ import { useDomainStore } from '@/domainStore/useDomainStore';
 import { IEnhancement } from '@/core/IEnhancement';
 import { eType, eEnhGrade } from '@/core/Enums';
 import { OriginGrade } from '@/core/Base/Data_Classes/Origin';
+import AssetImage from '@/components/asset-image';
 
 export interface EnhancementIconProps {
   enhancement: IEnhancement;
@@ -23,7 +24,7 @@ const IconContainer = styled(Box, {
   display: 'inline-block',
 }));
 
-const EnhancementImage = styled('img')({
+const EnhancementImage = styled(AssetImage)({
   position: 'absolute',
   top: 0,
   left: 0,
@@ -32,7 +33,7 @@ const EnhancementImage = styled('img')({
   objectFit: 'contain',
 });
 
-const BorderImage = styled('img')({
+const BorderImage = styled(AssetImage)({
   position: 'absolute',
   top: 0,
   left: 0,
