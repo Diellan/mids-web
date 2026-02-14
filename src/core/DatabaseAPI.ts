@@ -30,6 +30,7 @@ import { CrypticReplTable } from './Base/CrypticReplTable';
 import { ConfigData } from './ConfigData';
 import { parseVersion, Version } from './Utils/Helpers';
 import { fetchLocal } from './fetchLocal';
+import { showWarning } from './showWarning';
 
 export class DatabaseAPI {
   private static AttribMod: Map<string, number> = new Map();
@@ -2017,7 +2018,7 @@ export class DatabaseAPI {
     }
 
     if (flag) {
-      console.warn(
+      showWarning(
         'One or more enhancements had difficulty being matched to their invention set. You should check the database for misplaced Invention Set enhancements.\n' +
           str
       );
@@ -2298,7 +2299,7 @@ export class DatabaseAPI {
         if (archetype && typeof (archetype as any).StoreTo === 'function') {
           (archetype as any).StoreTo(writer);
         } else {
-          console.warn(`Archetype.StoreTo not implemented for index ${index}`);
+          showWarning(`Archetype.StoreTo not implemented for index ${index}`);
         }
       }
 
@@ -2319,7 +2320,7 @@ export class DatabaseAPI {
           if (power && typeof (power as any).StoreTo === 'function') {
             (power as any).StoreTo(writer);
           } else {
-            console.warn(`Power.StoreTo not implemented for index ${index}`);
+            showWarning(`Power.StoreTo not implemented for index ${index}`);
           }
         } catch (ex: any) {
           console.error(`Error saving power at index ${index}: ${ex.message}`);
@@ -3239,8 +3240,8 @@ export class DatabaseAPI {
       await PowersReplTable.Initialize(path);
       this.Database.ReplTable = PowersReplTable.Current;
     } catch (ex: any) {
-      console.warn(
-        `An error occurred loading the automatic powers replacement table.\r\nOld powers will now be converted and may appear blank\r\nwhen loading builds.\r\n\r\n${ex.message}`
+      showWarning(
+        `An error occurred loading the automatic powers replacement table.\nOld powers will now be converted and may appear blank\nwhen loading builds.\n\n${ex.message}`
       );
     }
   }
@@ -3250,7 +3251,7 @@ export class DatabaseAPI {
       await CrypticReplTable.Initialize(path);
       this.Database.CrypticReplTable = CrypticReplTable.Current;
     } catch (ex: any) {
-      console.warn(`Error loading CrypticReplTable: ${ex.message}`);
+      showWarning(`Error loading CrypticReplTable: ${ex.message}`);
       this.Database.CrypticReplTable = null;
     }
   }

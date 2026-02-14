@@ -2,6 +2,7 @@
 import fs from 'fs';
 import { AppDataPaths } from './AppDataPaths';
 import { fetchLocal } from './fetchLocal';
+import { showWarning } from './showWarning';
 
 interface AlternateEntry {
   SourcePowerId: number;
@@ -134,7 +135,7 @@ export class PowersReplTable {
       if (count > 0) {
         itemsToRemove.push(item);
         if (PowersReplTable.EnableDebug) {
-          console.warn(
+          showWarning(
             `Duplicate source power ID ${item.SourcePowerId} found. Removing entry.`
           );
         }

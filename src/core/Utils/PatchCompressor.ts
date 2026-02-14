@@ -11,6 +11,7 @@ import { FileHash } from './FileHash';
 import { ProgressEventArgs } from './ProgressEventArgs';
 import { ProgressFileStream } from './ProgressFileStream';
 import { PatchManifestBuilder, PatchType, Manifest } from './PatchManifestBuilder';
+import { showWarning } from '../showWarning';
 
 // Placeholder for FileData
 interface FileData {
@@ -122,7 +123,7 @@ export class PatchCompressor {
     private async CompileList(): Promise<FileData[]> {
         // Directory.EnumerateFiles is C# specific
         // In a web environment, this would need to be handled differently
-        console.warn('PatchCompressor.CompileList: File system enumeration not available in browser.');
+        showWarning('PatchCompressor.CompileList: File system enumeration not available in browser.');
         const files: string[] = [];
         const hashes: FileHash[] = [];
         const fileQueue: FileData[] = [];
@@ -168,7 +169,7 @@ export class PatchCompressor {
     private async CompressedFileData(hashedFiles: FileData[]): Promise<Uint8Array | null> {
         // BinaryWriter and MemoryStream are C# specific
         // In a web environment, this would use ArrayBuffer or similar
-        console.warn('PatchCompressor.CompressedFileData: BinaryWriter not available in browser.');
+        showWarning('PatchCompressor.CompressedFileData: BinaryWriter not available in browser.');
         try {
             const chunks: Uint8Array[] = [];
             const header = new TextEncoder().encode('Mids Reborn Patch Data');
@@ -222,7 +223,7 @@ export class PatchCompressor {
     private async GenerateCompressedFile(byteArray: Uint8Array): Promise<boolean> {
         // ProgressFileStream, DeflaterOutputStream are C# specific
         // In a web environment, this would use CompressionStream API or similar
-        console.warn('PatchCompressor.GenerateCompressedFile: File compression not fully implemented for web.');
+        showWarning('PatchCompressor.GenerateCompressedFile: File compression not fully implemented for web.');
         try {
             this.ProgressChanged?.(this, new ProgressEventArgs(`Generating Patch From Container: ${this.PatchName}`, 0, byteArray.length));
             await new Promise(resolve => setTimeout(resolve, 50));
@@ -282,7 +283,7 @@ export class PatchCompressor {
     private CleanPrevious(): void {
         // Directory.GetFiles and File.Delete are C# specific
         // In a web environment, this would need to be handled differently
-        console.warn('PatchCompressor.CleanPrevious: File deletion not available in browser.');
+        showWarning('PatchCompressor.CleanPrevious: File deletion not available in browser.');
         // File deletion removed for web
     }
 

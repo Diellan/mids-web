@@ -5,6 +5,7 @@ import midsTheme from './midsTheme';
 import { DatabaseAPI } from './core/DatabaseAPI';
 import { ServerData } from './core/ServerData';
 import MidsBuilder from './components/MidsBuilder';
+import AlertDialog from './components/alert-dialog';
 import { createDomainStore, type DomainStoreApi } from './domainStore/DomainStore';
 import { DomainStoreContext } from './domainStore/domainStoreContext';
 
@@ -38,6 +39,12 @@ function App() {
     const ipc = (window as any).ipcRenderer;
     if (!ipc) return;
 
+    const onNewBuild = () => {
+      domainStore.getState().newBuild().catch((err: any) => {
+        console.error('Failed to create new build:', err);
+      });
+    };
+
     const onFileOpened = (_event: any, content: string, _filePath: string) => {
       domainStore.getState().loadBuildFromContent(content).catch((err: any) => {
         console.error('Failed to open build file:', err);
@@ -52,9 +59,11 @@ function App() {
       });
     };
 
+    ipc.on('file:new', onNewBuild);
     ipc.on('file:opened', onFileOpened);
     ipc.on('file:save-requested', onSaveRequested);
     return () => {
+      ipc.off('file:new', onNewBuild);
       ipc.off('file:opened', onFileOpened);
       ipc.off('file:save-requested', onSaveRequested);
     };
@@ -75,6 +84,7 @@ function App() {
       <CssBaseline />
       <DomainStoreContext.Provider value={domainStore}>
         <MidsBuilder />
+        <AlertDialog />
       </DomainStoreContext.Provider>
     </ThemeProvider>
   );

@@ -2,6 +2,8 @@
 // Note: File I/O operations are C# specific and will need to be replaced with
 // browser-compatible storage (e.g., localStorage, IndexedDB, or server-side API calls).
 
+import { showWarning } from '../showWarning';
+
 export class BuildPreferences {
     WarningsIgnoredFor: Set<string> = new Set();
 
@@ -17,7 +19,7 @@ export class BuildPreferences {
                 return prefs;
             }
         } catch (ex) {
-            console.warn('Failed to load build preferences:', ex);
+            showWarning(`Failed to load build preferences: ${ex}`);
         }
         return new BuildPreferences();
     }

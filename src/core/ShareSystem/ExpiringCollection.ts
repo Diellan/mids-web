@@ -4,6 +4,7 @@
 
 import type { ExpiringCollectionItem } from './ExpiringCollectionItem';
 import { ExpiringCollectionItem as ExpiringCollectionItemClass } from './ExpiringCollectionItem';
+import { showWarning } from '../showWarning';
 
 export class ExpiringCollection {
     private _items: ExpiringCollectionItem[] | null = [];
@@ -68,7 +69,7 @@ export class ExpiringCollection {
                 this.RemoveExpiredItems();
             }
         } catch (ex: any) {
-            console.warn('Failed to load shared builds:', ex);
+            showWarning(`Failed to load shared builds: ${ex}`);
             this._items = [];
         }
     }

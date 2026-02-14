@@ -13,6 +13,7 @@ import { Power } from './Base/Data_Classes/Power';
 import { PowerGrantsMap } from './PowerGrantsMap';
 import { Statistics } from './Statistics';
 import { PowerEntry } from './PowerEntry';
+import { showWarning } from './showWarning';
 
 // Private structs converted to interfaces/classes
 interface FxIdentifierKey {
@@ -97,7 +98,7 @@ export class Toon extends Character {
         }
         this.RequestedLevel = this.CurrentBuild!.Powers[inToonHistory]?.Level ?? 0;
       } else if (canRemove.message && !MidsContext.EnhCheckMode) {
-        console.warn(canRemove.message);
+        showWarning(canRemove.message);
       }
 
       this.ResetLevel();
@@ -194,7 +195,7 @@ export class Toon extends Character {
           powerEntry.Power.Stacks = initialVariableValue;
         }
       } else if (message && !MidsContext.EnhCheckMode) {
-        console.warn(message);
+        showWarning(message);
       }
     }
 
@@ -2155,7 +2156,7 @@ export class Toon extends Character {
     // From clipboard (old datachunk) - Note: Clipboard access is UI-specific
     else if (mStream) {
       // Note: Clipboard handling would need UI-specific implementation
-      console.warn("Clipboard loading not implemented - requires UI context");
+      showWarning("Clipboard loading not implemented - requires UI context");
       return false;
     } else {
       console.error("Cannot load build: no data to load from.");
@@ -2238,10 +2239,10 @@ export class Toon extends Character {
       // Try forum post format
       if (iString.indexOf("Primary") > -1 && iString.indexOf("Secondary") > -1) {
         // Note: clsUniversalImport.InterpretForumPost would be called here
-        console.warn("Forum post import not implemented");
+        showWarning("Forum post import not implemented");
         return false;
       } else {
-        console.warn("Unable to recognize data format.");
+        showWarning("Unable to recognize data format.");
         return false;
       }
     }
@@ -2282,7 +2283,7 @@ export class Toon extends Character {
         console.log("Build data imported!");
         return true;
       } else {
-        console.warn("Build data couldn't be imported.");
+        showWarning("Build data couldn't be imported.");
         return false;
       }
     } catch (error) {
@@ -2325,7 +2326,7 @@ export class Toon extends Character {
 
     // Compressed format - would need decompression
     // Note: Full implementation would decompress and then call ReadInternalDataUC
-    console.warn("Compressed format reading not fully implemented");
+    showWarning("Compressed format reading not fully implemented");
     return false;
   }
 
@@ -2347,9 +2348,9 @@ export class Toon extends Character {
 
     // Version check messages would be shown here
     if (nVer < Toon.BuildFormatChange2 && Math.abs(nVer - Toon.BuildFormatChange1) > 0.0001) {
-      console.warn("The data being loaded was saved by an older version, attempting conversion.");
+      showWarning("The data being loaded was saved by an older version, attempting conversion.");
     } else if (nVer > Toon.BuildFormatChange2) {
-      console.warn(`The data being loaded was saved by a newer version (File format v ${nVer.toFixed(4)}, expected ${Toon.BuildFormatChange2.toFixed(4)}).`);
+      showWarning(`The data being loaded was saved by a newer version (File format v ${nVer.toFixed(4)}, expected ${Toon.BuildFormatChange2.toFixed(4)}).`);
     }
 
     // Parse character data
@@ -2370,7 +2371,7 @@ export class Toon extends Character {
     // Note: This is a placeholder for old format import
     // Full implementation would parse old format data
     if (nVer < 1.0) {
-      console.warn("The data being loaded was saved by an older version and may not load correctly.");
+      showWarning("The data being loaded was saved by an older version and may not load correctly.");
     }
 
     // Note: Full implementation would parse old format

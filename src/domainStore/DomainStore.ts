@@ -89,6 +89,7 @@ export interface DomainStoreState {
   getCumulativeSetBonuses: () => IEffect[];
 
   // Async
+  newBuild: () => Promise<void>;
   loadBuildFile: (buildFile: string) => Promise<void>;
   loadBuildFromContent: (content: string) => Promise<void>;
   saveBuildFile: () => Promise<void>;
@@ -361,6 +362,25 @@ export function createDomainStore(database?: IDatabase, toon?: Toon): DomainStor
           getCumulativeSetBonuses: () => get().toon.CurrentBuild?.GetCumulativeSetBonuses() ?? [],
 
           // --- Async ---
+
+          newBuild: async () => {
+            const { database } = get();
+            const newToon = new Toon(database.Classes[0]);
+            MidsContext.Character = newToon;
+            MidsContext.Archetype = newToon.Archetype;
+            MidsContext.Build = newToon.CurrentBuild;
+            await newToon.GenerateBuffedPowerArray();
+            set(s => ({
+              toon: newToon,
+              _version: s._version + 1,
+              highlightedPower: null,
+              powers: computePowers(newToon),
+              basePower: null,
+              enhancedPower: null,
+              totals: computeTotals(newToon),
+              ...computeAllPowersetOptions(newToon, database),
+            }), false, 'newBuild');
+          },
 
           loadBuildFile: async (buildFile: string) => {
             const { database } = get();

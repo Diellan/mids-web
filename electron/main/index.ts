@@ -87,6 +87,14 @@ async function createWindow() {
       label: 'File',
       submenu: [
         {
+          label: 'New',
+          accelerator: 'CmdOrCtrl+N',
+          click: () => {
+            if (!win) return
+            win.webContents.send('file:new')
+          },
+        },
+        {
           label: 'Open',
           accelerator: 'CmdOrCtrl+O',
           click: async () => {

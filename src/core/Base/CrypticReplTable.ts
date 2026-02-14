@@ -2,6 +2,7 @@
 import { AppDataPaths } from '../AppDataPaths';
 import { DatabaseAPI } from '../DatabaseAPI';
 import { fetchLocal } from '../fetchLocal';
+import { showWarning } from '../showWarning';
 
 export class CrypticReplTable {
   private _table: Map<string, string> = new Map();
@@ -80,7 +81,7 @@ export class CrypticReplTable {
       const count = counters.get(key) || 0;
       if (count > 0) {
         itemsToRemove.push([key, value]);
-        console.warn(
+        showWarning(
           `Warning: duplicate input power ID ${key} found. The replacement pair <${key}, ${value}> will be disabled.`
         );
       } else {
@@ -93,7 +94,7 @@ export class CrypticReplTable {
       );
       if (!power || (power as any).StaticIndex === -1) {
         itemsToRemove.push([key, value]);
-        console.warn(
+        showWarning(
           `Warning: power ID ${key} can be converted to ID ${value} but the source power doesn't exist.`
         );
       }
@@ -104,7 +105,7 @@ export class CrypticReplTable {
       );
       if (!targetPower || (targetPower as any).StaticIndex === -1) {
         itemsToRemove.push([key, value]);
-        console.warn(
+        showWarning(
           `Warning: power ID ${key} can be converted to ID ${value} but the target power doesn't exist.`
         );
       }

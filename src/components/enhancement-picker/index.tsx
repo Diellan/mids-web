@@ -3,17 +3,19 @@ import Dialog from '@mui/material/Dialog';
 import { IPower } from '@/core/IPower';
 import { Box, Typography, styled } from '@mui/material';
 import { eEnhGrade, ePvX, eType } from '@/core/Enums';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDomainStore } from '@/domainStore/useDomainStore';
 import EnhancementIcon from '@/components/enhancement-icon';
 import { useDomainStoreInstance } from '@/domainStore/domainStoreContext';
 import { EnhancementSet } from '@/core/EnhancementSet';
+import { SlotEntry } from '@/core/SlotEntry';
 import AssetImage from '@/components/asset-image';
 
 export interface EnhancementPickerProps {
   open: boolean;
   onClose: (enhancement: number | null, grade: eEnhGrade | undefined) => void;
   power: IPower;
+  slotEntry?: SlotEntry;
 }
 
 const ACCENT = '#00bcd4';
@@ -177,7 +179,7 @@ const gradeIconMap: Partial<Record<eEnhGrade, string>> = {
 };
 
 const EnhancementPicker = (props: EnhancementPickerProps) => {
-  const { onClose, open, power } = props;
+  const { onClose, open, power, slotEntry } = props;
 
   const [selectedType, setSelectedType] = useState<eType>(eType.SetO);
   const [selectedGrade, setSelectedGrade] = useState<eEnhGrade>(eEnhGrade.SingleO);
@@ -236,6 +238,70 @@ const EnhancementPicker = (props: EnhancementPickerProps) => {
     }
     return result;
   }, [allPowers]);
+
+  // When the picker opens, navigate to the most recently slotted enhancement's location
+  const prevOpenRef = useRef(false);
+  useEffect(() => {
+    if (open && !prevOpenRef.current) {
+      // Find reference enhancement: current slot first, then scan power's other slots
+      let refEnhId = slotEntry?.Enhancement?.Enh ?? -1;
+      let refGrade = slotEntry?.Enhancement?.Grade ?? eEnhGrade.SingleO;
+
+      if (refEnhId < 0) {
+        const pe = allPowers.find(p => p?.Power === power);
+        if (pe) {
+          for (let i = pe.Slots.length - 1; i >= 0; i--) {
+            const slot = pe.Slots[i];
+            if (slot.Enhancement?.Enh >= 0) {
+              refEnhId = slot.Enhancement.Enh;
+              refGrade = slot.Enhancement.Grade;
+              break;
+            }
+          }
+        }
+      }
+
+      if (refEnhId >= 0) {
+        const enh = domainStore.getEnhancement(refEnhId);
+        if (enh) {
+          setHighlightedEnh(null);
+          setHighlightedSet(null);
+
+          switch (enh.TypeID) {
+            case eType.Normal:
+              setSelectedType(eType.Normal);
+              setSelectedGrade(refGrade);
+              setSelectedSetType(null);
+              setSelectedSet(null);
+              break;
+            case eType.InventO:
+              setSelectedType(eType.InventO);
+              setSelectedSetType(null);
+              setSelectedSet(null);
+              break;
+            case eType.SpecialO:
+              setSelectedType(eType.SpecialO);
+              setSelectedSetType(null);
+              setSelectedSet(null);
+              break;
+            case eType.SetO: {
+              setSelectedType(eType.SetO);
+              const enhSet = enh.GetEnhancementSet();
+              if (enhSet) {
+                setSelectedSetType(enhSet.SetType);
+                setSelectedSet(enhSet);
+              } else {
+                setSelectedSetType(null);
+                setSelectedSet(null);
+              }
+              break;
+            }
+          }
+        }
+      }
+    }
+    prevOpenRef.current = open;
+  }, [open]);
 
   // Count how many enhancements from a given set are slotted in this power
   const getSetSlottedCount = (set: EnhancementSet): number => {

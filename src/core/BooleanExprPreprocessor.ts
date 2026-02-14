@@ -4,6 +4,7 @@ import { MidsContext } from './Base/Master_Classes/MidsContext';
 import { DatabaseAPI } from './DatabaseAPI';
 import { ConfigData } from './ConfigData';
 import { evaluate } from 'mathjs';
+import { showWarning } from './showWarning';
 
 export class BooleanExprPreprocessor {
   private static GetConditions(effect: IEffect): string[] {
@@ -340,7 +341,7 @@ export class BooleanExprPreprocessor {
       const result = evaluate(processedExpr);
       return typeof result === 'number' ? result > 0 : false;
     } catch (ex: any) {
-      console.warn(`Conditional check failed in ${prefixExpr}\nPower: ${effect.GetPower()?.FullName}\n${ex.message}`);
+      showWarning(`Conditional check failed in ${prefixExpr}\nPower: ${effect.GetPower()?.FullName}\n${ex.message}`);
       return false;
     }
   }

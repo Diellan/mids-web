@@ -17,6 +17,7 @@ import { HistoryMap } from './Schema';
 import { I9SetData } from './I9SetData';
 import { I9Slot } from './I9Slot';
 import type { IEnhancement } from './IEnhancement';
+import { showWarning, showConfirm } from './showWarning';
 
 export class Build {
   private readonly _character: Character;
@@ -599,18 +600,15 @@ export class Build {
     }
   }
 
-  SetEnhGrades(newVal: eEnhGrade): boolean {
+  async SetEnhGrades(newVal: eEnhGrade): Promise<boolean> {
     const str = newVal === eEnhGrade.TrainingO ? "Training" :
                 newVal === eEnhGrade.DualO ? "Dual" :
                 newVal === eEnhGrade.SingleO ? "Single" : "";
 
-    // Note: In C# this shows a MessageBox, here we'll use console.warn
-    console.warn(
-      `Really set all placed Regular enhancements to ${str} Origin?\r\n\r\nThis will not affect any Invention or Special enhancements.`
+    const confirmed = await showConfirm(
+      `Really set all placed Regular enhancements to ${str} Origin?\n\nThis will not affect any Invention or Special enhancements.`
     );
-    // For now, we'll return true. In a real UI, this would be a user confirmation.
-    // const confirmed = confirm(...);
-    // if (!confirmed) return false;
+    if (!confirmed) return false;
 
     for (const power of this.Powers) {
       if (power == null) continue;
@@ -625,10 +623,10 @@ export class Build {
     return true;
   }
 
-  SetIOLevels(newVal: number, iSetMin: boolean, iSetMax: boolean): boolean {
+  async SetIOLevels(newVal: number, iSetMin: boolean, iSetMax: boolean): Promise<boolean> {
     let text = "Really set all placed Invention and Set enhancements to ";
     if (!iSetMin && !iSetMax) {
-      text += `level ${newVal + 1}?\r\n\r\nNote: Enhancements which are not available at the default level will be set to the closest one.`;
+      text += `level ${newVal + 1}?\n\nNote: Enhancements which are not available at the default level will be set to the closest one.`;
     } else if (iSetMin) {
       newVal = 0;
       text += "their minimum possible level?";
@@ -637,9 +635,8 @@ export class Build {
       text += "their maximum possible level?";
     }
 
-    // Note: In C# this shows a MessageBox, here we'll use console.warn
-    console.warn(text);
-    // For now, we'll return true. In a real UI, this would be a user confirmation.
+    const confirmed = await showConfirm(text);
+    if (!confirmed) return false;
 
     for (const power of this.Powers) {
       if (power == null) continue;
@@ -695,7 +692,7 @@ export class Build {
     return true;
   }
 
-  SetEnhRelativeLevels(newVal: eEnhRelative): boolean {
+  async SetEnhRelativeLevels(newVal: eEnhRelative): Promise<boolean> {
     const display = newVal === eEnhRelative.None ? "None (Enhancements will have no effect)" :
                     newVal === eEnhRelative.MinusThree ? "-3" :
                     newVal === eEnhRelative.MinusTwo ? "-2" :
@@ -707,11 +704,10 @@ export class Build {
                     newVal === eEnhRelative.PlusFour ? "+4" :
                     newVal === eEnhRelative.PlusFive ? "+5" : "";
 
-    // Note: In C# this shows a MessageBox, here we'll use console.warn
-    console.warn(
-      `Really set all placed enhancements to a relative level of ${display}?\r\n\r\nNote: Normal and special enhancements cannot go above +3,\r\nInventions cannot go below +0.`
+    const confirmed = await showConfirm(
+      `Really set all placed enhancements to a relative level of ${display}?\n\nNote: Normal and special enhancements cannot go above +3,\nInventions cannot go below +0.`
     );
-    // For now, we'll return true. In a real UI, this would be a user confirmation.
+    if (!confirmed) return false;
 
     for (const power of this.Powers) {
       if (power == null) {
@@ -968,7 +964,7 @@ export class Build {
 
         if (enhancement.Unique && power.Slots[slotIndex].Enhancement.Enh === iEnh) {
           if (!silent) {
-            console.warn(`${enhancement.LongName} is a unique enhancement. You can only slot one of these across your entire build.`);
+            showWarning(`${enhancement.LongName} is a unique enhancement. You can only slot one of these across your entire build.`);
           }
           return false;
         }
@@ -1020,10 +1016,10 @@ export class Build {
       if (!silent) {
         switch (mutexType) {
           case 0:
-            console.warn(`${enhancement.LongName} is mutually exclusive with ${foundEnh}. You can only slot one type of this enhancement across your entire build.`);
+            showWarning(`${enhancement.LongName} is mutually exclusive with ${foundEnh}. You can only slot one type of this enhancement across your entire build.`);
             break;
           case 1:
-            console.warn(`${enhancement.LongName} is mutually exclusive with ${foundEnh}. You can only slot one stealth proc across your entire build.`);
+            showWarning(`${enhancement.LongName} is mutually exclusive with ${foundEnh}. You can only slot one stealth proc across your entire build.`);
             break;
         }
       }
@@ -1034,7 +1030,7 @@ export class Build {
     }
 
     if (!silent) {
-      console.warn(`${enhancement.LongName} is already slotted in this power. You can only slot one of each enhancement from the set in a given power.`);
+      showWarning(`${enhancement.LongName} is already slotted in this power. You can only slot one of each enhancement from the set in a given power.`);
     }
     return false;
   }
@@ -1220,7 +1216,7 @@ export class Build {
             const message = (!doDetoggle || !power1.MutexAuto || !this.Powers[hIdx]!.StatInclude)
               ? `${str1}\n\nYou should turn off the powers listed before turning this one on.`
               : `${str1}\n\nThe listed powers have been turned off.`;
-            console.warn(message);
+            showWarning(message);
           }
 
           result = powerEntryList.length > 0
