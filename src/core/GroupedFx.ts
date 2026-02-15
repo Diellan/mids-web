@@ -1,7 +1,7 @@
 // Converted from C# GroupedFx.cs
 import type { IPower } from './IPower';
 import type { IEffect } from './IEffect';
-import { eEffectType, eMez, eDamage, eToWho, ePvX, eSpecialCase } from './Enums';
+import { eEffectType, eMez, eDamage, eToWho, ePvX, eSpecialCase, GetEffectName, GetEffectNameShort, eOverrideBoolean } from './Enums';
 import { DatabaseAPI } from './DatabaseAPI';
 import { MidsContext } from './Base/Master_Classes/MidsContext';
 import { Extensions } from './Extensions';
@@ -52,7 +52,7 @@ function containsAll<T>(list: T[], elements: T[]): boolean {
 
 // Utility function for Dictionary extensions
 function containsKeyPrefix<T1, T2>(dict: Map<T1, T2>, prefix: string, nameFound: { value: string }): boolean {
-  for (const k of dict.keys()) {
+  for (const k of Array.from(dict.keys())) {
     const keyStr = String(k);
     if (keyStr.startsWith(prefix)) {
       nameFound.value = keyStr;
@@ -484,27 +484,280 @@ export class GroupedFx {
           .reduce((a, b) => a + b, 0);
   }
 
+  /// <summary>
+  /// Generate tooltip for a grouped effect.
+  /// </summary>
+  /// <param name="power">Source power</param>
+  /// <param name="simple">Short effect text generation</param>
+  /// <returns>Build effect string from each effect, then concatenate into a single string (one effect per line)</returns>
   GetTooltip(power: IPower, simple: boolean = false): string {
-    // Simplified implementation - full implementation would require BuildEffectString and other methods
+    let vectors = '';
     const statName = this.GetStatName(power);
     const groupedVector = this.GetGroupedVector(statName);
-    let vectors = '';
+    let numDelays = 1;
 
     if (groupedVector !== '') {
       vectors = groupedVector;
     } else {
-      // Simplified vector generation
+      const uniqueVectors: DelayedVector[] = [];
       const refEffect = power.Effects[this.IncludedEffects[0]];
-      vectors = String(refEffect.DamageType || refEffect.MezType || refEffect.ETModifies);
+      let vectorsChunks: DelayedVector[] = [];
+
+      switch (refEffect.EffectType) {
+        case eEffectType.SpeedFlying:
+        case eEffectType.SpeedJumping:
+        case eEffectType.SpeedRunning:
+          vectorsChunks = this.IncludedEffects.map(e => ({
+            Vector: String(power.Effects[e].EffectType),
+            Delay: power.Effects[e].DelayedTime ?? 0
+          }));
+          break;
+
+        case eEffectType.Mez:
+        case eEffectType.MezResist:
+          vectorsChunks = this.IncludedEffects.map(e => ({
+            Vector: String(power.Effects[e].MezType),
+            Delay: power.Effects[e].DelayedTime ?? 0
+          }));
+          break;
+
+        case eEffectType.Enhancement:
+          if (
+            refEffect.ETModifies === eEffectType.Mez ||
+            refEffect.ETModifies === eEffectType.MezResist
+          ) {
+            if (groupedVector !== '') {
+              vectorsChunks = [{
+                Vector: groupedVector,
+                Delay: power.Effects[this.IncludedEffects[0]].DelayedTime ?? 0
+              }];
+            } else {
+              vectorsChunks = this.IncludedEffects.map(e => ({
+                Vector: String(power.Effects[e].MezType),
+                Delay: power.Effects[e].DelayedTime ?? 0
+              }));
+            }
+          } else if (
+            refEffect.ETModifies === eEffectType.Defense ||
+            refEffect.ETModifies === eEffectType.Resistance ||
+            refEffect.ETModifies === eEffectType.Elusivity
+          ) {
+            if (groupedVector !== '') {
+              vectorsChunks = [{
+                Vector: `${groupedVector} ${refEffect.ETModifies}`,
+                Delay: power.Effects[this.IncludedEffects[0]].DelayedTime ?? 0
+              }];
+            } else {
+              vectorsChunks = this.IncludedEffects.map(e => {
+                if (
+                  power.Effects[e].ETModifies === eEffectType.Defense ||
+                  power.Effects[e].ETModifies === eEffectType.Resistance ||
+                  power.Effects[e].ETModifies === eEffectType.Elusivity
+                ) {
+                  return {
+                    Vector: `${power.Effects[e].DamageType} ${power.Effects[e].ETModifies}`,
+                    Delay: power.Effects[e].DelayedTime ?? 0
+                  };
+                } else {
+                  return {
+                    Vector: String(power.Effects[e].ETModifies),
+                    Delay: power.Effects[e].DelayedTime ?? 0
+                  };
+                }
+              });
+            }
+          } else {
+            vectorsChunks = this.IncludedEffects.map(e => ({
+              Vector: String(power.Effects[e].ETModifies),
+              Delay: power.Effects[e].DelayedTime ?? 0
+            }));
+          }
+          break;
+
+        case eEffectType.Defense:
+        case eEffectType.Resistance:
+        case eEffectType.Elusivity:
+        case eEffectType.DamageBuff:
+          if (groupedVector !== '') {
+            vectorsChunks = [{
+              Vector: `${refEffect.EffectType}(${groupedVector})`,
+              Delay: power.Effects[this.IncludedEffects[0]].DelayedTime ?? 0
+            }];
+          } else {
+            vectorsChunks = this.IncludedEffects.map(e => ({
+              Vector: String(power.Effects[e].DamageType),
+              Delay: power.Effects[e].DelayedTime ?? 0
+            }));
+          }
+          break;
+
+        case eEffectType.ResEffect:
+          vectorsChunks = this.IncludedEffects.map(e => ({
+            Vector: String(power.Effects[e].ETModifies),
+            Delay: power.Effects[e].DelayedTime ?? 0
+          }));
+          break;
+
+        default:
+          vectorsChunks = [];
+          break;
+      }
+
+      addRangeUnique(uniqueVectors, vectorsChunks);
+      uniqueVectors.splice(0, uniqueVectors.length, ...this.CompactVectorsList(uniqueVectors, refEffect.EffectType, refEffect.ETModifies));
+      vectors = uniqueVectors.map(e => e.Vector).join(', ');
+      numDelays = Math.max(1, Array.from(new Set(uniqueVectors.map(e => e.Delay))).length);
     }
 
-    // Simplified tooltip - would need full BuildEffectString implementation
-    const tip = this.IncludedEffects.map(index => {
-      const effect = power.Effects[index];
-      return `${effect.EffectType}: ${effect.BuffedMag}`;
-    }).join('\r\n');
+    // Change stat name inside effect string with list of vectors
+    // Use the first effect of the group as base
+    const refEffect = power.Effects[this.IncludedEffects[0]];
+    const sameKindBuff = this.GetEffects(power).every(e =>
+      e.EffectType === refEffect.EffectType &&
+      e.DamageType === refEffect.DamageType &&
+      e.MezType === refEffect.MezType &&
+      e.ETModifies === refEffect.ETModifies
+    );
 
-    return tip;
+    const maxRange =
+      (this.IsAggregated &&
+        this.NumEffects > 1 &&
+        this.GetEffects(power).some(e => e.BuffedMag !== power.Effects[this.IncludedEffects[0]].BuffedMag)) ||
+      numDelays > 1 ||
+      sameKindBuff
+        ? this.NumEffects
+        : 1;
+
+    const altList: number[] = [];
+    const delaysDict = new Map<number, string>();
+    if (numDelays <= 1) {
+      const fxStrings = this.IncludedEffects.map(e =>
+        power.Effects[e].BuildEffectString(simple, '', false, false, false, simple, false, true)
+      );
+
+      const delayMatches = fxStrings.map((e, i) => {
+        const match = e.match(/after ([0-9.]+) (delay|second)/);
+        return {
+          index: i,
+          delay: match ? match[1] : '0'
+        };
+      });
+
+      const uniqueDelays = delayMatches.filter((e, index, arr) =>
+        arr.findIndex(d => d.delay === e.delay) === index
+      );
+
+      uniqueDelays.forEach(e => delaysDict.set(e.index, e.delay));
+      altList.push(...Array.from(delaysDict.keys()));
+    }
+
+    const useAltList = altList.length > 0 && Array.from(delaysDict.values()).some(e => GroupedFx.ParseFloat(e) > 0);
+    let tip = '';
+
+    for (let i = 0; i < (useAltList ? altList.length : maxRange); i++) {
+      const index = useAltList ? altList[i] : i;
+
+      const baseEffectString = power.Effects[this.IncludedEffects[index]].BuildEffectString(
+        simple, '', false, false, false, simple, false, true
+      );
+
+      let fxTip: string;
+      switch (power.Effects[this.IncludedEffects[index]].EffectType) {
+        case eEffectType.SpeedFlying:
+        case eEffectType.SpeedJumping:
+        case eEffectType.SpeedRunning:
+          fxTip = statName === 'Slow'
+            ? GroupedFx.InvertStringValue(
+                baseEffectString.replace(
+                  /(SpeedFlying|SpeedJumping|SpeedRunning)/g,
+                  'Slow'
+                )
+              )
+            : baseEffectString.replace(
+                /(SpeedFlying|SpeedJumping|SpeedRunning)/g,
+                vectors
+              );
+          break;
+
+        case eEffectType.Mez:
+        case eEffectType.MezResist:
+          fxTip = baseEffectString.replace(
+            `${power.Effects[this.IncludedEffects[index]].EffectType}(${power.Effects[this.IncludedEffects[index]].MezType})`,
+            `${power.Effects[this.IncludedEffects[index]].EffectType}(${vectors})`
+          );
+          break;
+
+        case eEffectType.Enhancement:
+          if (
+            power.Effects[this.IncludedEffects[index]].ETModifies === eEffectType.Mez ||
+            power.Effects[this.IncludedEffects[index]].ETModifies === eEffectType.MezResist
+          ) {
+            fxTip = baseEffectString.replace(
+              `${power.Effects[this.IncludedEffects[index]].EffectType}(${power.Effects[this.IncludedEffects[index]].MezType})`,
+              `${power.Effects[this.IncludedEffects[index]].EffectType}(${vectors === 'All' && power.Effects[this.IncludedEffects[index]].ETModifies === eEffectType.Mez ? 'Mez' : vectors})`
+            );
+          } else if (
+            power.Effects[this.IncludedEffects[index]].ETModifies === eEffectType.Defense ||
+            power.Effects[this.IncludedEffects[index]].ETModifies === eEffectType.Resistance ||
+            power.Effects[this.IncludedEffects[index]].ETModifies === eEffectType.Elusivity
+          ) {
+            const lastEffect = power.Effects[this.IncludedEffects[this.IncludedEffects.length - 1]];
+            const shouldAddType =
+              (lastEffect.ETModifies === eEffectType.Defense ||
+                lastEffect.ETModifies === eEffectType.Resistance ||
+                lastEffect.ETModifies === eEffectType.Elusivity) &&
+              vectors.includes('All');
+
+            fxTip = baseEffectString.replace(
+              `${power.Effects[this.IncludedEffects[index]].EffectType}(${power.Effects[this.IncludedEffects[index]].DamageType} ${power.Effects[this.IncludedEffects[index]].ETModifies})`,
+              `${power.Effects[this.IncludedEffects[index]].EffectType}(${vectors}${shouldAddType ? ` ${lastEffect.ETModifies}` : ''})`
+            );
+          } else {
+            fxTip = baseEffectString.replace(
+              `${power.Effects[this.IncludedEffects[index]].EffectType}(${power.Effects[this.IncludedEffects[index]].ETModifies})`,
+              `${power.Effects[this.IncludedEffects[index]].EffectType}(${vectors})`
+            );
+          }
+          break;
+
+        case eEffectType.Resistance:
+        case eEffectType.Defense:
+        case eEffectType.Elusivity:
+        case eEffectType.DamageBuff:
+          fxTip = baseEffectString.replace(
+            `${power.Effects[this.IncludedEffects[index]].EffectType}(${power.Effects[this.IncludedEffects[index]].DamageType})`,
+            `${power.Effects[this.IncludedEffects[index]].EffectType}(${vectors})`
+          );
+          break;
+
+        case eEffectType.ResEffect:
+          fxTip = baseEffectString.replace(
+            `${power.Effects[this.IncludedEffects[index]].EffectType}(${power.Effects[this.IncludedEffects[index]].ETModifies})`,
+            `${power.Effects[this.IncludedEffects[index]].EffectType}(${vectors})`
+          );
+          break;
+
+        case eEffectType.SilentKill:
+          fxTip = baseEffectString
+            .replace('SilentKill', 'Self-Destructs')
+            .replace(' in ', ' after ')
+            .replace(' to Self', '')
+            .replace(' to Target', '');
+          break;
+
+        default:
+          fxTip = baseEffectString;
+          break;
+      }
+
+      tip += `${tip === '' ? '' : '\r\n'}${fxTip}`;
+    }
+
+    return tip
+      .replace(/([0-9A-Za-z\-]+)\(\1/g, '$1') // statName(statName (both same expression match)
+      .replace('((', '(')
+      .replace('))', ')')
+      .replace('None Defense', 'Base Defense');
   }
 
   ContainsFxIndex(idx: number): boolean {
@@ -1116,6 +1369,15 @@ export class GroupedFx {
     return gre;
   }
 
+  /// <summary>
+  /// Generates a list of PairedListItems from the provided grouped ranked effects.
+  /// </summary>
+  /// <param name="groupedRankedEffects">The grouped ranked effects to process.</param>
+  /// <param name="pBase">The base power.</param>
+  /// <param name="pEnh">The enhanced power.</param>
+  /// <param name="rankedEffects">The ranked effects indices.</param>
+  /// <param name="displayBlockFontSize">The font size for display blocks.</param>
+  /// <returns>A list of key-value pairs where the key is the GroupedFx and the value is the corresponding PairedListItem.</returns>
   static GenerateListItems(
     groupedRankedEffects: GroupedFx[],
     pBase: IPower | null,
@@ -1142,50 +1404,8 @@ export class GroupedFx {
         continue;
       }
 
-      // Note: FastItemBuilder.GetRankedEffect needs to be fully implemented
-      // For now, creating a basic PairedListItem
-      let rankedEffect: PairedListItem = {
-        Name: '',
-        Value: '',
-        ToolTip: '',
-        UseUniqueColor: false,
-        UseAlternateColor: false
-      };
-
-      // Try to get from FastItemBuilder if available
-      try {
-        // Note: FastItemBuilder.GetRankedEffect needs to be fully implemented
-        // For now, we'll create the basic structure and let FinalizeListItem fill it in
-        if (typeof (FastItemBuilder as any).GetRankedEffect === 'function') {
-          const fastItem = (FastItemBuilder as any).GetRankedEffect(
-            rankedEffects,
-            greIndex,
-            pBase,
-            pEnh
-          );
-          if (fastItem && typeof fastItem === 'object') {
-            rankedEffect = {
-              Name: fastItem.Name ?? '',
-              Value: fastItem.Value ?? '',
-              ToolTip: fastItem.ToolTip ?? '',
-              UseUniqueColor: fastItem.UseUniqueColor ?? false,
-              UseAlternateColor: fastItem.UseAlternateColor ?? false
-            };
-          }
-        }
-      } catch {
-        // Fallback to basic implementation
-      }
-
-      GroupedFx.FinalizeListItem(
-        rankedEffect,
-        pBase,
-        pEnh,
-        gre,
-        rankedEffects[greIndex],
-        powerInBuild,
-        displayBlockFontSize
-      );
+      const rankedEffect = FastItemBuilder.GetRankedEffect(rankedEffects, greIndex, pBase, pEnh);
+      GroupedFx.FinalizeListItem(rankedEffect, pBase, pEnh, gre, rankedEffects[greIndex], powerInBuild, displayBlockFontSize);
 
       ret.push({ key: gre, value: rankedEffect });
     }
@@ -1217,8 +1437,7 @@ export class GroupedFx {
       pBase.Effects.some(e => e.EffectType === eEffectType.EntCreate) &&
       pBase.AbsorbSummonEffects
     ) {
-      // Note: AbsorbPetEffects needs to be implemented
-      // pBase.AbsorbPetEffects();
+      pBase.AbsorbPetEffects();
     }
 
     const defiancePower = DatabaseAPI.GetPowerByFullName('Inherent.Inherent.Defiance');
@@ -1344,7 +1563,7 @@ export class GroupedFx {
       case eEffectType.Recovery:
       case eEffectType.Endurance:
       case eEffectType.Regeneration:
-        rankedEffect.Name = String(effectType);
+        rankedEffect.Name = eEffectType[effectType];
         rankedEffect.Value = effectSource.DisplayPercentage
           ? `${(magSum * 100).toFixed(2)}%${toWhoShort}`
           : `${magSum.toFixed(2)}${toWhoShort}`;
@@ -1366,25 +1585,476 @@ export class GroupedFx {
         rankedEffect.Name = 'Summon';
         rankedEffect.Value =
           effectSource.nSummon > -1
-            ? `Level ${effectSource.nSummon}`
-            : effectSource.Summon || 'Unknown';
+            ? DatabaseAPI.Database.Entities[effectSource.nSummon].DisplayName
+            : (effectSource.Summon || '').replace(/^(MastermindPets|Pets|Villain_Pets)_/, '');
+        if (gre.NumEffects > 1) {
+          rankedEffect.Value += ` x${gre.NumEffects}`;
+        }
+        if (effectSource.nSummon > -1) {
+          let entityTooltip = gre
+            .IncludedEffects.map(e => pEnh.Effects[e])
+            .sort((a, b) => a.DelayedTime - b.DelayedTime)
+            .map(e => e.BuildEffectString(false, '', false, false, false, false, false, true))
+            .join('\r\n');
+
+          const entityPowersets = DatabaseAPI.Database.Entities[effectSource.nSummon].GetNPowerset();
+          if (entityPowersets.length > 0 && entityPowersets[0] > -1) {
+            const entityPowerset = DatabaseAPI.Database.Powersets[entityPowersets[0]];
+            entityTooltip += '\r\n\r\nEntity has the following Powers:';
+            for (const p of entityPowerset.Power) {
+              const epShortDesc = this.GeneratePowerDescShort(DatabaseAPI.Database.Power[p]);
+              entityTooltip += `\r\n- ${DatabaseAPI.Database.Power[p].DisplayName}`;
+              if (
+                epShortDesc &&
+                (!DatabaseAPI.Database.Power[p].DescShort ||
+                  DatabaseAPI.Database.Power[p].DescShort.toLowerCase() ===
+                    DatabaseAPI.Database.Power[p].DisplayName.toLowerCase())
+              ) {
+                entityTooltip += ` (${epShortDesc})`;
+              } else if (DatabaseAPI.Database.Power[p].DescShort) {
+                entityTooltip += ` (${DatabaseAPI.Database.Power[p].DescShort})`;
+              }
+            }
+            entityTooltip += '\r\n\r\nTo see the effects of these Powers, Left-Click on the Entity.';
+          }
+
+          // Note: EntTag would be set here if needed
+          rankedEffect.ToolTip = entityTooltip;
+        } else {
+          rankedEffect.ToolTip = greTooltip;
+        }
+        break;
+
+      case eEffectType.GrantPower:
+        rankedEffect.Name = 'Grant';
+        if (effectSource.nSummon > -1) {
+          rankedEffect.Value = DatabaseAPI.Database.Power[effectSource.nSummon].DisplayName;
+          const mainEffectTip = effectSource.BuildEffectString(false, '', false, false, false, false, false, true);
+          const subEffectsTip = DatabaseAPI.Database.Power[effectSource.nSummon].Effects
+            .filter(
+              e =>
+                (e.PvMode === ePvX.Any ||
+                  (e.PvMode === ePvX.PvE && !MidsContext.Config.Inc.DisablePvE) ||
+                  (e.PvMode === ePvX.PvP && MidsContext.Config.Inc.DisablePvE)) &&
+                (!e.ActiveConditionals || !e.ActiveConditionals.length || e.ValidateConditional())
+            )
+            .map(e =>
+              e
+                .BuildEffectString(false, '', false, false, false, false, false, true)
+                .replace(/\r\n/g, '\n')
+                .replace(/\n/g, ' -- ')
+                .replace(/  /g, ' ')
+            )
+            .join('\r\n');
+          rankedEffect.ToolTip = `${mainEffectTip}\r\n----------\r\n${subEffectsTip}`;
+        }
+        break;
+
+      case eEffectType.LevelShift:
+        rankedEffect.Name = 'LvlShift';
+        rankedEffect.Value = `${effectSource.Mag > 0 ? '+' : ''}${effectSource.Mag.toFixed(2)}`;
+        break;
+
+      case eEffectType.RevokePower:
+        rankedEffect.Name = 'Revoke';
+        rankedEffect.Value =
+          effectSource.nSummon > -1
+            ? DatabaseAPI.Database.Entities[effectSource.nSummon].DisplayName
+            : (effectSource.Summon || '').replace(/^(MastermindPets|Pets|Villain_Pets)_/, '');
+        break;
+
+      case eEffectType.DamageBuff:
+        const isDefiance =
+          effectSource.SpecialCase === eSpecialCase.Defiance &&
+          effectSource.ValidateConditional('Active', 'Defiance') ||
+          (defiancePower && MidsContext.Character?.CurrentBuild?.PowerActive(defiancePower));
+        rankedEffect.Name = isDefiance
+          ? 'Defiance'
+          : FastItemBuilder.Str.ShortStr(
+              displayBlockFontSize,
+              GetEffectName(effectSource.EffectType),
+              GetEffectNameShort(effectSource.EffectType)
+            );
+        rankedEffect.Value = `${(effectSource.BuffedMag * 100).toFixed(2)}%${toWhoShort}`;
+        rankedEffect.ToolTip = isDefiance
+          ? effectSource.BuildEffectString(false, 'DamageBuff (Defiance)', false, false, false, true)
+          : greTooltip;
+        break;
+
+      case eEffectType.Mez:
+        if (gre.NumEffects === 1) {
+          rankedEffect.Name =
+            effectSource.MezType === eMez.Teleport
+              ? 'TP'
+              : effectSource.MezType === eMez.Knockback
+                ? 'KB'
+                : effectSource.MezType === eMez.Knockup
+                  ? 'KUp'
+                  : eMez[effectSource.MezType];
+        }
+
+        const minDuration = Math.min(...gre.IncludedEffects.map(e => pEnh.Effects[e].Duration));
+        const maxDuration = Math.max(...gre.IncludedEffects.map(e => pEnh.Effects[e].Duration));
+        const minMaxDuration =
+          Math.abs(minDuration - maxDuration) > Number.EPSILON
+            ? `${minDuration > 0 ? `${minDuration.toFixed(2)}s` : 'Up to'} ${maxDuration.toFixed(2)}s`
+            : `${maxDuration.toFixed(2)}s`;
+
+        if (effectSource.ToWho === eToWho.Target && !sameKindBuff) {
+          rankedEffect.Value =
+            [eMez.Knockback, eMez.Knockup, eMez.Teleport].includes(effectSource.MezType)
+              ? `${effectSource.BuffedMag.toFixed(2)} (Tgt)`
+              : `${effectSource.Duration.toFixed(2)}s (Mag ${effectSource.BuffedMag.toFixed(2)}, to Tgt)`;
+        } else if (effectSource.ToWho === eToWho.Self && !sameKindBuff) {
+          rankedEffect.Value = `${effectSource.BuffedMag.toFixed(2)} (Slf)`;
+        } else if (effectSource.ToWho === eToWho.Target && sameKindBuff) {
+          rankedEffect.Value =
+            [eMez.Knockback, eMez.Knockup, eMez.Teleport].includes(effectSource.MezType)
+              ? `${magSum.toFixed(2)} (Tgt)`
+              : `${minMaxDuration} (Mag ${magSum.toFixed(2)}, to Tgt)`;
+        } else if (effectSource.ToWho === eToWho.Self && sameKindBuff) {
+          rankedEffect.Value = `${magSum.toFixed(2)} (Slf)`;
+        }
+
+        rankedEffect.ToolTip = greTooltip;
+        break;
+
+      case eEffectType.Translucency:
+        rankedEffect.Name = 'Trnslcncy';
+        rankedEffect.Value = effectSource.DisplayPercentage
+          ? `${(effectSource.BuffedMag * 100).toFixed(2)}%${toWhoShort}`
+          : `${effectSource.BuffedMag.toFixed(2)}${toWhoShort}`;
+        rankedEffect.ToolTip = greTooltip;
+        break;
+
+      case eEffectType.SpeedFlying:
+      case eEffectType.SpeedJumping:
+      case eEffectType.SpeedRunning:
+        if (gre.GetStatName(pEnh) === 'Slow') {
+          rankedEffect.Name = 'Slow';
+          rankedEffect.Value = this.InvertStringValue(rankedEffect.Value);
+        } else if (
+          gre.NumEffects > 1 &&
+          gre.IncludedEffects.some(e => pEnh.Effects[e].EffectType !== pEnh.Effects[gre.IncludedEffects[0]].EffectType)
+        ) {
+          rankedEffect.Name = `${(gre.IsAggregated ? magSum : effectSource.Mag) < 0 ? '-' : ''}Movement`;
+        }
+        rankedEffect.ToolTip = greTooltip;
+        break;
+
+      case eEffectType.Resistance:
+      case eEffectType.Defense:
+      case eEffectType.Elusivity:
+      case eEffectType.MezResist:
+      case eEffectType.Enhancement:
+      case eEffectType.ResEffect:
+        rankedEffect.Name =
+          effectType === eEffectType.Enhancement
+            ? gre.NumEffects > 1
+              ? effectSource.Mag < 0
+                ? 'Debuff'
+                : 'Enhancement'
+              : `${effectSource.Mag < 0 ? '-' : '+'}${eEffectType[effectSource.ETModifies]}`
+            : FastItemBuilder.Str.ShortStr(
+                displayBlockFontSize,
+                GetEffectName(effectSource.EffectType),
+                GetEffectNameShort(effectSource.EffectType)
+              );
+        rankedEffect.Value = effectSource.DisplayPercentage
+          ? `${(effectSource.BuffedMag * 100).toFixed(2)}%${toWhoShort}`
+          : `${effectSource.BuffedMag.toFixed(2)}${toWhoShort}`;
+        rankedEffect.ToolTip = greTooltip;
+        break;
+
+      case eEffectType.PerceptionRadius:
+        rankedEffect.Name = `Pceptn${toWhoShort}`;
+        rankedEffect.Value = `${
+          effectSource.DisplayPercentage ? `${(magSum * 100).toFixed(2)}%` : `${magSum.toFixed(2)}`
+        } (${(DatabaseAPI.ServerData.BasePerception * magSum).toFixed(2)}ft)`;
+        rankedEffect.ToolTip = greTooltip;
+        break;
+
+      case eEffectType.ToHit:
+        rankedEffect.Name = 'ToHit';
+        rankedEffect.Value = `${(gre.Mag * 100).toFixed(2)}%${toWhoShort}`;
+        rankedEffect.ToolTip = greTooltip;
+        break;
+
+      case eEffectType.RechargeTime:
+        rankedEffect.Value = `${(gre.Mag * 100).toFixed(2)}%${toWhoShort}`;
+        rankedEffect.ToolTip = greTooltip;
+        break;
+
+      case eEffectType.Heal:
+        rankedEffect.Name = `Heal${toWhoShort}`;
+        rankedEffect.Value =
+          effectSource.DisplayPercentage && effectSource.DisplayPercentageOverride === eOverrideBoolean.TrueOverride
+            ? `${(gre.Mag * 100).toFixed(2)}% HP`
+            : `${gre.Mag.toFixed(2)} HP (${(
+                (gre.Mag / MidsContext.Character!.DisplayStats.HealthHitpointsNumeric(false)) *
+                100
+              ).toFixed(2)}%)`;
+        rankedEffect.ToolTip = greTooltip;
+        break;
+
+      case eEffectType.MaxRunSpeed:
+      case eEffectType.MaxJumpSpeed:
+      case eEffectType.MaxFlySpeed:
+      case eEffectType.EnduranceDiscount:
+      case eEffectType.ThreatLevel:
+        rankedEffect.Value = `${(gre.Mag * 100).toFixed(2)}%${toWhoShort}`;
         rankedEffect.ToolTip = greTooltip;
         break;
 
       default:
-        // Use default values from FastItemBuilder if available
-        if (!rankedEffect.Name) {
-          rankedEffect.Name = gre.GetStatName(pEnh);
-        }
-        if (!rankedEffect.Value) {
-          rankedEffect.Value = effectSource.DisplayPercentage
-            ? `${(magSum * 100).toFixed(2)}%${toWhoShort}`
-            : `${magSum.toFixed(2)}${toWhoShort}`;
-        }
-        if (!rankedEffect.ToolTip) {
-          rankedEffect.ToolTip = greTooltip;
-        }
+        const configDisablePvE = MidsContext.Config?.Inc?.DisablePvE ?? false;
+        rankedEffect.Value = `${magSum.toFixed(2)}${effectSource.DisplayPercentage ? '%' : ''}${toWhoShort}`;
+        rankedEffect.Name = FastItemBuilder.Str.ShortStr(
+          displayBlockFontSize,
+          GetEffectName(effectSource.EffectType),
+          GetEffectNameShort(effectSource.EffectType)
+        );
+        rankedEffect.ToolTip = pEnh.Effects
+          .filter(
+            e =>
+              ((configDisablePvE && e.PvMode === ePvX.PvP) ||
+                (!configDisablePvE && e.PvMode === ePvX.PvE) ||
+                e.PvMode === ePvX.Any) &&
+              Math.abs(e.BuffedMag) > Number.EPSILON &&
+              e.ToWho === effectSource.ToWho &&
+              e.EffectType === effectSource.EffectType &&
+              e.MezType === effectSource.MezType &&
+              e.ETModifies === effectSource.ETModifies &&
+              (e.PvMode === effectSource.PvMode || e.PvMode === ePvX.Any) &&
+              e.IgnoreScaling === effectSource.IgnoreScaling
+          )
+          .map(e => e.BuildEffectString(false, '', false, false, false, true))
+          .join('\r\n');
         break;
     }
+  }
+
+  private static InvertStringValue(value: string): string {
+    return value.startsWith('-') ? value.substring(1) : `-${value}`;
+  }
+
+  private static GeneratePowerDescShort(power: IPower | null): string {
+    if (!power) return '';
+
+    const effectShorts: string[] = [];
+    const fxIdList: FxId[] = [];
+    let effects = [...power.Effects];
+    effects = effects
+      .sort((a, b) => a.ToWho - b.ToWho)
+      .filter(
+        e =>
+          ![
+            eEffectType.Null,
+            eEffectType.NullBool,
+            eEffectType.Meter,
+            eEffectType.Damage,
+            eEffectType.MaxFlySpeed,
+            eEffectType.MaxJumpSpeed,
+            eEffectType.MaxRunSpeed,
+            eEffectType.ExecutePower,
+            eEffectType.RevokePower,
+            eEffectType.GlobalChanceMod,
+            eEffectType.SetMode,
+            eEffectType.SetCostume,
+          ].includes(e.EffectType) &&
+          ![
+            eEffectType.Null,
+            eEffectType.NullBool,
+          ].includes(e.ETModifies) &&
+          e.ToWho !== eToWho.Unspecified &&
+          Math.abs(e.BuffedMag) >= Number.EPSILON &&
+          (e.PvMode === ePvX.Any ||
+            (e.PvMode === ePvX.PvE && !MidsContext.Config.Inc.DisablePvE) ||
+            (e.PvMode === ePvX.PvP && MidsContext.Config.Inc.DisablePvE)) &&
+          (!e.ActiveConditionals || !e.ActiveConditionals.length || e.ValidateConditional())
+      );
+
+    for (const effect of effects) {
+      let fxIdentifier: FxId;
+      switch (effect.EffectType) {
+        case eEffectType.MezResist:
+        case eEffectType.Mez:
+          fxIdentifier = {
+            EffectType: effect.EffectType,
+            DamageType: eDamage.None,
+            MezType: effect.MezType,
+            ETModifies: eEffectType.None,
+            ToWho: effect.ToWho,
+            PvMode: effect.PvMode,
+            SummonId: -1,
+            Duration: 0,
+            IgnoreScaling: effect.IgnoreScaling,
+          };
+          break;
+        case eEffectType.ResEffect:
+        case eEffectType.Enhancement:
+          fxIdentifier = {
+            EffectType: effect.EffectType,
+            DamageType: eDamage.None,
+            MezType: eMez.None,
+            ETModifies: effect.ETModifies,
+            ToWho: effect.ToWho,
+            PvMode: effect.PvMode,
+            SummonId: -1,
+            Duration: 0,
+            IgnoreScaling: effect.IgnoreScaling,
+          };
+          break;
+        default:
+          fxIdentifier = {
+            EffectType: effect.EffectType,
+            DamageType: eDamage.None,
+            MezType: eMez.None,
+            ETModifies: eEffectType.None,
+            ToWho: effect.ToWho,
+            PvMode: effect.PvMode,
+            SummonId: -1,
+            Duration: 0,
+            IgnoreScaling: effect.IgnoreScaling,
+          };
+          break;
+      }
+
+      if (fxIdList.some(fx => GroupedFx.FxIdEquals(fx, fxIdentifier))) {
+        continue;
+      }
+
+      const toWho =
+        effects.length === 1 ||
+        (effects.indexOf(effect) < effects.length - 1 &&
+          effect.ToWho !== effects[effects.indexOf(effect) + 1].ToWho) ||
+        (effects.indexOf(effect) < effects.length - 1 &&
+          [eEffectType.Mez, eEffectType.Enhancement].includes(
+            effects[effects.indexOf(effect) + 1].EffectType
+          )) ||
+        (effects.length > 1 && effects.indexOf(effect) === effects.length - 1)
+          ? effect.ToWho === eToWho.Self
+            ? ' (Self)'
+            : effect.ToWho === eToWho.Target
+              ? ' (Target)'
+              : ''
+          : '';
+
+      const mezType =
+        effect.ToWho === eToWho.Self
+          ? eMez[effect.MezType]
+          : effect.MezType === eMez.Held
+            ? 'Hold'
+            : effect.MezType === eMez.Stunned
+              ? 'Stun'
+              : effect.MezType === eMez.Confused
+                ? 'Confuse'
+                : effect.MezType === eMez.Immobilized
+                  ? 'Immobilize'
+                  : effect.MezType === eMez.Terrorized
+                    ? 'Fear'
+                    : eMez[effect.MezType];
+
+      let effectShort: string;
+      switch (effect.EffectType) {
+        case eEffectType.ResEffect:
+          effectShort = `${effect.BuffedMag < 0 ? '-' : ''}${effect.EffectType} (${effect.ETModifies})${toWho}`;
+          break;
+        case eEffectType.MezResist:
+          effectShort = `(${effect.EffectType} (${effect.MezType})${toWho}`;
+          break;
+        case eEffectType.Mez:
+          effectShort = `${effect.ToWho} ${mezType}`;
+          break;
+        case eEffectType.Enhancement:
+          effectShort = `${effect.ToWho} ${effect.BuffedMag > 0 ? '+' : '-'}${effect.ETModifies}`;
+          break;
+        default:
+          effectShort = `${effect.BuffedMag < 0 ? '-' : ''}${effect.EffectType}${toWho}`;
+          break;
+      }
+
+      effectShorts.push(effectShort);
+      fxIdList.push(fxIdentifier);
+    }
+
+    return effectShorts.join(', ');
+  }
+
+  private static ParseFloat(value: string, defaultValue: number = 0): number {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? defaultValue : parsed;
+  }
+
+  private CompactVectorsList(vectors: DelayedVector[], effectType: eEffectType, etModifies: eEffectType): DelayedVector[] {
+    if (vectors.length === 0) return vectors;
+
+    const result: DelayedVector[] = [];
+    const grouped = new Map<string, DelayedVector[]>();
+
+    // Group by delay
+    for (const vector of vectors) {
+      const key = vector.Delay.toString();
+      if (!grouped.has(key)) {
+        grouped.set(key, []);
+      }
+      grouped.get(key)!.push(vector);
+    }
+
+    // Process each delay group
+    for (const [delayStr, delayVectors] of Array.from(grouped)) {
+      const uniqueVectors = Array.from(new Set(delayVectors.map(v => v.Vector)));
+      const delay = parseFloat(delayStr);
+
+      if (uniqueVectors.length === 1) {
+        result.push({ Vector: uniqueVectors[0], Delay: delay });
+      } else if (uniqueVectors.length === delayVectors.length) {
+        // All different, keep as is
+        result.push(...delayVectors.map(v => ({ ...v, Delay: delay })));
+      } else {
+        // Check for special cases
+        if (
+          (effectType === eEffectType.Mez || effectType === eEffectType.MezResist) &&
+          uniqueVectors.length > 1
+        ) {
+          result.push({ Vector: 'All', Delay: delay });
+        } else if (
+          (effectType === eEffectType.Defense ||
+            effectType === eEffectType.Resistance ||
+            effectType === eEffectType.Elusivity ||
+            effectType === eEffectType.DamageBuff) &&
+          uniqueVectors.length > 1
+        ) {
+          result.push({ Vector: 'All', Delay: delay });
+        } else if (
+          effectType === eEffectType.Enhancement &&
+          (etModifies === eEffectType.Defense ||
+            etModifies === eEffectType.Resistance ||
+            etModifies === eEffectType.Elusivity) &&
+          uniqueVectors.length > 1
+        ) {
+          result.push({ Vector: 'All', Delay: delay });
+        } else {
+          // Keep unique vectors
+          uniqueVectors.forEach(vector => {
+            result.push({ Vector: vector, Delay: delay });
+          });
+        }
+      }
+    }
+
+    return result;
+  }
+
+  private static FxIdEquals(a: FxId, b: FxId): boolean {
+    return (
+      a.EffectType === b.EffectType &&
+      a.DamageType === b.DamageType &&
+      a.MezType === b.MezType &&
+      a.ETModifies === b.ETModifies &&
+      a.ToWho === b.ToWho &&
+      a.PvMode === b.PvMode &&
+      a.IgnoreScaling === b.IgnoreScaling
+    );
   }
 }

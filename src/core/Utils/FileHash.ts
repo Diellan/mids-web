@@ -12,7 +12,7 @@ export class FileHash {
         this.Hash = hash;
     }
 
-    static async ComputeHash(byteData: Uint8Array): Promise<string> {
+    static async ComputeHash(byteData: BufferSource): Promise<string> {
         // Using Web Crypto API for SHA256 hashing
         const hashBuffer = await crypto.subtle.digest('SHA-256', byteData);
         const hashArray = Array.from(new Uint8Array(hashBuffer));

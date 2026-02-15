@@ -47,7 +47,7 @@ export class I9Slot {
           (sEffect.BuffMode === eBuffDebuff.DeBuffOnly && !(mag <= 0.0)) ||
           (sEffect.BuffMode === eBuffDebuff.BuffOnly && !(mag >= 0.0)) ||
           sEffect.Schedule === eSchedule.None ||
-          (sEffect.Enhance.ID as eEnhance) !== iEffect ||
+          sEffect.Enhance.ID !== iEffect ||
           (subEnh >= 0 && subEnh !== sEffect.Enhance.SubID)) {
         continue;
       }
@@ -516,7 +516,7 @@ export class I9Slot {
     }
 
     if (this.IOLevel) {
-      return this.IOLevel.toString();
+      return (this.IOLevel + 1).toString();
     }
 
     return this.GetRelativeString(false);

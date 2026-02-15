@@ -1479,11 +1479,11 @@ export class Power implements IPower {
     }
 
     IgnoreEnhancement(iEffect: Enums.eEnhance): boolean {
-        return this.IgnoreEnh.includes(iEffect);
+        return this.IgnoreEnh.length === 0 || !this.IgnoreEnh.includes(iEffect);
     }
 
     IgnoreBuff(iEffect: Enums.eEnhance): boolean {
-        return this.Ignore_Buff.includes(iEffect);
+        return this.Ignore_Buff.length === 0 || !this.Ignore_Buff.includes(iEffect);
     }
 
     SetMathMag(): void {

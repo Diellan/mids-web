@@ -272,6 +272,7 @@ export class CharacterBuildData {
         const atNiD = DatabaseAPI.NidFromUidClass(this.Class);
         const atOrigin = DatabaseAPI.NidFromUidOrigin(this.Origin, atNiD);
         const character = new Toon();
+        MidsContext.Character = character;
         character.Reset(DatabaseAPI.Database.Classes[atNiD], atOrigin);
         character.Alignment = Alignment[this.Alignment as keyof typeof Alignment] || Alignment.Hero;
         character.Name = this.Name;

@@ -5,7 +5,7 @@ import type { IPower } from './IPower';
 import type { IPowerset } from './IPowerset';
 import type { IEnhancement } from './IEnhancement';
 import { PowersetGroup } from './PowersetGroup';
-import { dmModes, ePowerSetType, eType } from './Enums';
+import { dmModes, eBuffMode, eEffectType, ePowerSetType, eType, eBoosts } from './Enums';
 import { Database } from './Base/Data_Classes/Database';
 import { ServerData } from './ServerData';
 import { AppDataPaths } from './AppDataPaths';
@@ -29,6 +29,8 @@ import { PowersReplTable } from './PowersReplTable';
 import { CrypticReplTable } from './Base/CrypticReplTable';
 import { ConfigData } from './ConfigData';
 import { parseVersion, Version } from './Utils/Helpers';
+import { fetchLocal } from './fetchLocal';
+import { showWarning } from './showWarning';
 
 export class DatabaseAPI {
   private static AttribMod: Map<string, number> = new Map();
@@ -1052,7 +1054,7 @@ export class DatabaseAPI {
    
     await DatabaseAPI.LoadReplacementTable(path);
    
-    await DatabaseAPI.LoadCrypticReplacementTable();
+    await DatabaseAPI.LoadCrypticReplacementTable(path);
    
     await DatabaseAPI.MatchAllIDs();
     await DatabaseAPI.AssignSetBonusIndexes();
@@ -1069,7 +1071,7 @@ export class DatabaseAPI {
     let reader: BinaryReader | null = null;
 
     try {
-      const response = await fetch(filePath);
+      const response = await fetchLocal(filePath);
       const buffer = await response.arrayBuffer();
       reader = new BinaryReader(buffer);
     } catch {
@@ -1491,9 +1493,11 @@ export class DatabaseAPI {
         const boosts: string[] = [];
         if (power.BoostsAllowed.length <= 0 && power.Enhancements.length > 0) {
           for (const enh of power.Enhancements) {
-            // Note: Would need Enum.GetName equivalent for eBoosts
-            // For now, using the numeric value as string
-            boosts.push(enh.toString());
+            // Get enum name from value (TypeScript equivalent of Enum.GetName)
+            const boostName = eBoosts[enh];
+            if (boostName) {
+              boosts.push(boostName);
+            }
           }
           power.BoostsAllowed = boosts;
         }
@@ -1666,7 +1670,7 @@ export class DatabaseAPI {
       iClass = effPower.ForcedClass
         ? this.NidFromUidClass(effPower.ForcedClass)
         : iEffect.Absorbed_Class_nID <= -1
-          ? 0 // MidsContext.Archetype.Idx
+          ? MidsContext.Archetype!.Idx
           : iEffect.Absorbed_Class_nID;
 
       // Everything seems to be valid, return the modifier
@@ -1801,27 +1805,27 @@ export class DatabaseAPI {
       if (power.GetPowerSet()?.SetType === ePowerSetType.SetBonus) {
         flag = power.PowerName.includes('Slow');
         if (flag) {
-          power.BuffMode = 1; // Enums.eBuffMode.Debuff
+          power.BuffMode = eBuffMode.Debuff;
           for (const effect of power.Effects) {
-            effect.buffMode = 1; // Enums.eBuffMode.Debuff
+            effect.buffMode = eBuffMode.Debuff;
           }
         }
       }
 
       for (const effect of power.Effects) {
         if (flag) {
-          effect.buffMode = 1; // Enums.eBuffMode.Debuff
+          effect.buffMode = eBuffMode.Debuff;
         }
 
         switch (effect.EffectType) {
-          case 20: // Enums.eEffectType.GrantPower
+          case eEffectType.GrantPower:
             effect.nSummon = this.NidFromUidPower(effect.Summon);
             power.HasGrantPowerEffect = true;
             break;
-          case 21: // Enums.eEffectType.EntCreate
+          case eEffectType.EntCreate:
             effect.nSummon = this.NidFromUidEntity(effect.Summon);
             break;
-          case 22: // Enums.eEffectType.PowerRedirect
+          case eEffectType.PowerRedirect:
             effect.nSummon = this.NidFromUidPower(effect.Override);
             power.HasPowerOverrideEffect = true;
             break;
@@ -2014,7 +2018,7 @@ export class DatabaseAPI {
     }
 
     if (flag) {
-      console.warn(
+      showWarning(
         'One or more enhancements had difficulty being matched to their invention set. You should check the database for misplaced Invention Set enhancements.\n' +
           str
       );
@@ -2171,7 +2175,7 @@ export class DatabaseAPI {
     let reader: BinaryReader | null = null;
 
     try {
-      const response = await fetch(filePath);
+      const response = await fetchLocal(filePath);
       const buffer = await response.arrayBuffer();
       reader = new BinaryReader(buffer);
     } catch {
@@ -2295,7 +2299,7 @@ export class DatabaseAPI {
         if (archetype && typeof (archetype as any).StoreTo === 'function') {
           (archetype as any).StoreTo(writer);
         } else {
-          console.warn(`Archetype.StoreTo not implemented for index ${index}`);
+          showWarning(`Archetype.StoreTo not implemented for index ${index}`);
         }
       }
 
@@ -2316,7 +2320,7 @@ export class DatabaseAPI {
           if (power && typeof (power as any).StoreTo === 'function') {
             (power as any).StoreTo(writer);
           } else {
-            console.warn(`Power.StoreTo not implemented for index ${index}`);
+            showWarning(`Power.StoreTo not implemented for index ${index}`);
           }
         } catch (ex: any) {
           console.error(`Error saving power at index ${index}: ${ex.message}`);
@@ -2344,7 +2348,7 @@ export class DatabaseAPI {
     let reader: BinaryReader | null = null;
 
     try {
-      const response = await fetch(filePath);
+      const response = await fetchLocal(filePath);
       if (!response.ok) {
         console.error('Failed to load enhancement database file!');
         return;
@@ -2443,7 +2447,7 @@ export class DatabaseAPI {
 
     let fileContent: string;
     try {
-      const response = await fetch(filePath);
+      const response = await fetchLocal(filePath);
       if (!response.ok) {
         console.error('Failed to load enhancement classes file!');
         return false;
@@ -2549,7 +2553,7 @@ export class DatabaseAPI {
   static async LoadTypeGrades(iPath?: string): Promise<void> {
     const filePath = AppDataPaths.SelectDataFileLoad(AppDataPaths.JsonFileTypeGrades, iPath);
     try {
-      const response = await fetch(filePath);
+      const response = await fetchLocal(filePath);
       if (!response.ok) {
         console.error('Failed to load TypeGrades file!');
         return;
@@ -2621,7 +2625,7 @@ export class DatabaseAPI {
     let reader: BinaryReader | null = null;
 
     try {
-      const response = await fetch(filePath);
+      const response = await fetchLocal(filePath);
       if (!response.ok) {
         console.error('Failed to load recipe database file!');
         return;
@@ -2698,7 +2702,7 @@ export class DatabaseAPI {
     let reader: BinaryReader | null = null;
 
     try {
-      const response = await fetch(filePath);
+      const response = await fetchLocal(filePath);
       if (!response.ok) {
         console.error('Failed to load salvage database file!');
         return;
@@ -2769,7 +2773,7 @@ export class DatabaseAPI {
 
     let fileContent: string;
     try {
-      const response = await fetch(filePath);
+      const response = await fetchLocal(filePath);
       if (!response.ok) {
         console.error('Failed to load origins database file!');
         return;
@@ -2880,7 +2884,7 @@ export class DatabaseAPI {
 
     let levels: LevelMap[] = [];
     try {
-      const response = await fetch(filePath);
+      const response = await fetchLocal(filePath);
       if (!response.ok) {
         console.error('Failed to load levels database file!');
         return false;
@@ -2944,7 +2948,7 @@ export class DatabaseAPI {
 
     try {
       var effectIds: string[] = [];
-      const response = await fetch(filePath);
+      const response = await fetchLocal(filePath);
       if (!response.ok) {
         console.error('Failed to load effect ids database file!');
         return false;
@@ -3025,7 +3029,7 @@ export class DatabaseAPI {
 
     let fileContent: string;
     try {
-      const response = await fetch(filePath);
+      const response = await fetchLocal(filePath);
       if (!response.ok) {
         console.error('Failed to load enhancement maths file!');
         return false;
@@ -3236,24 +3240,18 @@ export class DatabaseAPI {
       await PowersReplTable.Initialize(path);
       this.Database.ReplTable = PowersReplTable.Current;
     } catch (ex: any) {
-      console.warn(
-        `An error occurred loading the automatic powers replacement table.\r\nOld powers will now be converted and may appear blank\r\nwhen loading builds.\r\n\r\n${ex.message}`
+      showWarning(
+        `An error occurred loading the automatic powers replacement table.\nOld powers will now be converted and may appear blank\nwhen loading builds.\n\n${ex.message}`
       );
     }
   }
 
-  static async LoadCrypticReplacementTable(): Promise<void> {
-    const filename = AppDataPaths.CNamePowersRepl;
-    if (!filename) {
-      this.Database.CrypticReplTable = null;
-      return;
-    }
-
+  static async LoadCrypticReplacementTable(path: string): Promise<void> {
     try {
-      await CrypticReplTable.Initialize();
+      await CrypticReplTable.Initialize(path);
       this.Database.CrypticReplTable = CrypticReplTable.Current;
     } catch (ex: any) {
-      console.warn(`Error loading CrypticReplTable: ${ex.message}`);
+      showWarning(`Error loading CrypticReplTable: ${ex.message}`);
       this.Database.CrypticReplTable = null;
     }
   }

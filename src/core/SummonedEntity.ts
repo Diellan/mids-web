@@ -1,7 +1,7 @@
 // Converted from C# SummonedEntity.cs
-import type { IPower } from '../type/power';
 import { eSummonEntity } from './Enums';
 import { BinaryReader, BinaryWriter } from 'csharp-binary-stream';
+import { IPower } from './IPower';
 
 export class SummonedEntity {
   private _nClassID: number = 0;

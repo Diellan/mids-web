@@ -1,5 +1,5 @@
 // Converted from C# clsRewardCurrency.cs
-import { RewardCurrency } from './Enums';
+import { Alignment, RewardCurrency } from './Enums';
 import { PopUp } from './Base/Display/PopUp';
 import { MidsContext } from './Base/Master_Classes/MidsContext';
 import type { Salvage } from './Salvage';
@@ -97,9 +97,9 @@ export class clsRewardCurrency {
       case RewardCurrency.EmpyreanMerit:
         return `Empyrean Merit${plural}`;
       case RewardCurrency.AlignmentMerit:
-        return MidsContext.Character?.Alignment === 'Villain' ||
-          MidsContext.Character?.Alignment === 'Rogue' ||
-          MidsContext.Character?.Alignment === 'Loyalist'
+        return MidsContext.Character?.Alignment === Alignment.Villain ||
+          MidsContext.Character?.Alignment === Alignment.Rogue ||
+          MidsContext.Character?.Alignment === Alignment.Loyalist
           ? `Villain Merit${plural}`
           : `Hero Merit${plural}`;
       case RewardCurrency.VanguardMerit:

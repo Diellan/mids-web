@@ -1,4 +1,4 @@
-import ListItem, { ListItemProps } from "@mui/material/ListItem";
+import ListItem from "@mui/material/ListItem";
 import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material";
 import { SlotEntry } from "@/core/SlotEntry";
@@ -6,8 +6,9 @@ import EnhancementPicker from "../enhancement-picker";
 import { useState } from "react";
 import { IPower } from "@/core/IPower";
 import { eEnhGrade } from "@/core/Enums";
-import { getImgUrl } from "@/utils/getImgUrl";
 import { useDomainStore } from "@/domainStore/useDomainStore";
+import EnhancementIcon from "@/components/enhancement-icon";
+import AssetImage from '@/components/asset-image';
 
 const Slot = styled(ListItem)(({ theme }) => ({
   borderRadius: 20,
@@ -60,12 +61,23 @@ const PowerSlotEnhancer = ({
     }
   };
 
-  const imageUrl = useDomainStore(store => store.getEnhancementImagePath(slotEntry.Enhancement?.Enh));
+  const enhancementId = slotEntry.Enhancement?.Enh ?? -1;
+  const enhancement = useDomainStore(store =>
+    enhancementId >= 0 ? store.getEnhancement(enhancementId) : null
+  );
 
   return (
     <>
       <Slot {...prop} onClick={handleOpen}>
-        <img src={getImgUrl(imageUrl)} alt={slotEntry.Enhancement?.Enh.toString()} />
+        {enhancement ? (
+          <EnhancementIcon
+            enhancement={enhancement}
+            grade={slotEntry.Enhancement?.Grade}
+            size={30}
+          />
+        ) : (
+          <AssetImage src={'./assets/Sets/None.png'} alt="Empty slot" />
+        )}
         <SlotEnhancementLevel>{slotEntry.Enhancement?.GetEnhancementLevelString()}</SlotEnhancementLevel>
         <SlotLevel>{slotEntry.Level+1}</SlotLevel>
       </Slot>

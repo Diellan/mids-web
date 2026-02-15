@@ -1,0 +1,87 @@
+This Hero build was built using Mids Reborn 3.7.11
+https://github.com/LoadedCamel/MidsReborn
+
+Lorenzo Mondavi: Level 50 Magic Brute
+Primary Power Set: Electrical Melee
+Secondary Power Set: Shield Defense
+Power Pool: Speed
+Power Pool: Leaping
+Power Pool: Fighting
+Ancillary Pool: Soul Mastery
+
+Hero Profile:
+------------
+Level 1:	Charged Brawl			SprUnrFur-Acc/Dmg(A), SprUnrFur-Dmg/Rchg(3), SprUnrFur-Acc/Dmg/Rchg(3), SprUnrFur-Dmg/EndRdx/Rchg(5), SprUnrFur-Acc/Dmg/EndRdx/Rchg(5), SprUnrFur-Rchg/+Regen/+End(7)
+Level 1:	Deflection			LucoftheG-Def/Rchg+(A), LucoftheG-Def(7), UnbGrd-ResDam/EndRdx/Rchg(9), UnbGrd-ResDam(9), UnbGrd-ResDam/EndRdx(11), UnbGrd-Max HP%(11)
+Level 2:	Battle Agility			LucoftheG-Def/Rchg+(A), LucoftheG-Def/EndRdx(13), LucoftheG-Def/Rchg(13), LucoftheG-EndRdx/Rchg(15), LucoftheG-Def/EndRdx/Rchg(15), LucoftheG-Def(17)
+Level 4:	True Grit			Pnc-Heal(A), Pnc-Heal/EndRedux(17), Pnc-EndRdx/Rchg(19), Pnc-Heal/EndRedux/Rchg(19), Pnc-Heal/Rchg(21), StdPrt-ResDam/Def+(21)
+Level 6:	Hasten				RechRdx-I(A), RechRdx-I(23)
+Level 8:	Thunder Strike			SprAvl-Acc/Dmg(A), SprAvl-Acc/Dmg/EndRdx(23), Arm-Dam%(25), FuroftheG-ResDeb%(25), FrcFdb-Rechg%(27), PrfZng-Dam%(27)
+Level 10:	Combat Jumping			LucoftheG-Def/Rchg+(A), Ksm-ToHit+(29)
+Level 12:	Active Defense			RechRdx-I(A)
+Level 14:	Super Speed			Empty(A)
+Level 16:	Against All Odds		EndRdx-I(A)
+Level 18:	Chain Induction			SprBlsCol-Acc/Dmg(A), SprBlsCol-Acc/Dmg/EndRdx(29), Hct-Dam%(31), GldStr-%Dam(31), PrfZng-Dam%(31), TchofDth-Dam%(48)
+Level 20:	Phalanx Fighting		LucoftheG-Def/Rchg+(A)
+Level 22:	Boxing				Empty(A)
+Level 24:	Grant Cover			ShlWal-Def/EndRdx(A), ShlWal-EndRdx/Rchg(33), ShlWal-Def/EndRdx/Rchg(33), ShlWal-ResDam/Re TP(34)
+Level 26:	Lightning Rod			Arm-Dmg(A), Arm-Dmg/Rchg(34), Arm-Acc/Dmg/Rchg(34), Arm-Acc/Rchg(36), Arm-Dmg/EndRdx(36), FrcFdb-Rechg%(36)
+Level 28:	Shield Charge			SprBrtFur-Acc/Dmg(A), SprBrtFur-Dmg/Rchg(37), SprBrtFur-Acc/Dmg/Rchg(37), SprBrtFur-Dmg/EndRdx/Rchg(37), SprBrtFur-Acc/Dmg/EndRdx/Rchg(39), SprBrtFur-Rech/Fury%(39)
+Level 30:	Tough				Ags-ResDam(A), Ags-ResDam/EndRdx(39), Ags-ResDam/EndRdx/Rchg(40), Ags-Psi/Status(40), Ags-ResDam/Rchg(50)
+Level 32:	Weave				Rct-Def(A), Rct-Def/EndRdx(40), Rct-EndRdx/Rchg(42), Rct-Def/Rchg(42), Rct-Def/EndRdx/Rchg(42), Rct-ResDam%(43)
+Level 35:	Gloom				Apc-Dam%(A), Apc-Dmg/EndRdx(43), Apc-Dmg/Rchg(43), Apc-Acc/Dmg/Rchg(45), Apc-Acc/Rchg(45), Dcm-Build%(45)
+Level 38:	Build Up			GssSynFr--Build%(A)
+Level 41:	Dark Obliteration		Rgn-Knock%(A), Rgn-Dmg/EndRdx(46), Rgn-Dmg/Rchg(46), Rgn-Acc/Dmg/Rchg(46), Rgn-Acc/Rchg(48)
+Level 44:	Lightning Clap			Empty(A)
+Level 47:	One with the Shield		GldArm-3defTpProc(A)
+Level 49:	Taunt				PrfZng-Taunt/Rng(A)
+Level 1:	Fury	
+Level 1:	Brawl				Empty(A)
+Level 1:	Sprint				Empty(A)
+Level 2:	Rest				Empty(A)
+Level 1:	Swift				Empty(A)
+Level 1:	Hurdle				Empty(A)
+Level 1:	Health				Pnc-Heal/+End(A), Prv-Absorb%(33), Mrc-Rcvry+(50)
+Level 1:	Stamina				PrfShf-EndMod(A), PrfShf-EndMod/Acc(48), PrfShf-End%(50)
+Level 14:	Speed Phase	
+Level 50:	Spectral Radial Flawless Interface	
+Level 50:	Assault Radial Embodiment	
+Level 50:	Cardiac Core Paragon	
+Level 50:	Portal Jockey	
+Level 50:	Task Force Commander	
+Level 50:	The Atlas Medallion	
+Level 50:	Freedom Phalanx Reserve	
+------------
+
+
+
+
+
+
+|              Do not modify anything below this line!              |
+|-------------------------------------------------------------------|
+|MxDz;2137;749;1498;HEX;|
+|78DA7D94CB4F135114C6CF74A602A5D096021569E90315A4525A01DF06A3D088B60|
+|9092B1786947285499A96B485887BF786856E88F1B9E0EF70A7E0EBFFE0E12BD185|
+|19EFCC949E8F9230499BF99D73CF77BF7BEEC9641F4DBAB7B732374969BD5DC8552|
+|A73B7CA2B55E1CCE616F53CC9C793299545F17129922D151772AB7A938C05AD3573|
+|59511022315510F96A59CFE70A76A0969C140F45B12212B34BBA282C1C20B9664AA|
+|5426276598805B7F59A11B965BDB8D866415A5F5CAA4AF259345D5CD52BFABC5ED0|
+|AB6B81A9653D9FB0A5674B2B72AF5CA52ACA6B61696740FEFE995E153A780C27915|
+|B234A698A211F07B521B43368E441F0329C201FC307F711F92E89A996DAD24E8666|
+|FAA3D6EB9AE917838B7E23FC65F828E51594576C793BEB262F828FA19D3A10FC0C5|
+|EDB920D5B525E457995226ADDB097820C1D1442083374521F4240EA856CF9989C09|
+|27C82B4E8A537D69378279C8263EA9E16CA20DEE7237BD603849371C0013DCAD53F|
+|4C4015061E8964E5AD0490BF631684D49CDF4B6EC49AB52BF53835AD167BF146A23|
+|169260D937FF3EC94A0F567A28CA95669F7DD86B1F3DD5C0C23A431FC51D00832A0|
+|01C6A84E6CC21B7E1B3DCDC0FF2E4C7132AD27617DAEE62DB5F6465002AD500A5F9|
+|42237407619A214AF7D89879CD3D787F3D74999D46E90AC255867EBA86701D012EF|
+|3ABF4D88BCDEBA597BCF9697A85F01AE10DC3597A8BF08E4195ED0981BC16A23105|
+|962619066814619C214529064D2A86D170987655A8DB633847FB08DF117E300CD14|
+|F86BC7C8DA17C8C520E589A441866384F098411840D1E267386CFF067CD90B0C94B|
+|85DC7C10BB354897383B4C17114611C67078C71934A916C7F18CF3787E93579FC05|
+|C822E70231CB23289639FA432EBA6B5C35F6723A8113E8615AC6D94392637A3A10E|
+|990DAAE7765C8737C1BADD63727B0D39693BCA078BD08E0AA37557A95FCEFED1BA7|
+|5ECEB3307D43D67783F74F8D365DC0F9035B2F5C066AC2130E16F083C703504728D|
+|81F9C6C04C63E03F5EE16E89|
+|-------------------------------------------------------------------|

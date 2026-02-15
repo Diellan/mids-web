@@ -6,12 +6,14 @@ import type { IEffect } from './IEffect';
 import { DatabaseAPI } from './DatabaseAPI';
 import { MidsContext } from './Base/Master_Classes/MidsContext';
 import { Enhancement } from './Enhancement';
-import { ePowerSetType, dmModes, eSchedule, eEffectType, eDamage, eMez, eEnhance, eGridType, ePowerType, eToWho, eAspect, eBuffMode, eEffectClass, eStatType, eSpecialCase, eEffMode, eAttribType, ShortFX, ShortFXImpl, BuffsX, BuffsXImpl } from './Enums';
+import { ePowerSetType, dmModes, eSchedule, eEffectType, eDamage, eMez, eEnhance, eGridType, ePowerType, eToWho, eAspect, eBuffMode, eEffectClass, eStatType, eSpecialCase, eEffMode, eAttribType, ShortFX, ShortFXImpl, BuffsX, BuffsXImpl, StringToFlaggedEnum, IsEnumValue } from './Enums';
 import type { Archetype } from './Base/Data_Classes/Archetype';
 import type { I9Slot } from './I9Slot';
 import { Power } from './Base/Data_Classes/Power';
 import { PowerGrantsMap } from './PowerGrantsMap';
 import { Statistics } from './Statistics';
+import { PowerEntry } from './PowerEntry';
+import { showWarning } from './showWarning';
 
 // Private structs converted to interfaces/classes
 interface FxIdentifierKey {
@@ -96,7 +98,7 @@ export class Toon extends Character {
         }
         this.RequestedLevel = this.CurrentBuild!.Powers[inToonHistory]?.Level ?? 0;
       } else if (canRemove.message && !MidsContext.EnhCheckMode) {
-        console.warn(canRemove.message);
+        showWarning(canRemove.message);
       }
 
       this.ResetLevel();
@@ -193,7 +195,7 @@ export class Toon extends Character {
           powerEntry.Power.Stacks = initialVariableValue;
         }
       } else if (message && !MidsContext.EnhCheckMode) {
-        console.warn(message);
+        showWarning(message);
       }
     }
 
@@ -205,12 +207,8 @@ export class Toon extends Character {
     this.ResetLevel();
   }
 
-  public BuildSlot(powerNID: number, slotIDX: number = -1): number {
-    if (powerNID < 0) {
-      return -1;
-    }
-
-    const powerEntry = this.CurrentBuild?.Powers.find(p => p?.NIDPower === powerNID);
+  public BuildSlot(powerEntryId: string, slotIDX: number = -1): number {
+    const powerEntry = this.CurrentBuild?.Powers.find(p => p?.id === powerEntryId);
     if (!powerEntry) {
       return -1;
     }
@@ -319,7 +317,7 @@ export class Toon extends Character {
     return result.state === 'Enabled';
   }
 
-  public GenerateBuffedPowerArray(): void {
+  public async GenerateBuffedPowerArray(): Promise<void> {
     if (!this.CurrentBuild) return;
     
     this.CurrentBuild.GenerateSetBonusData();
@@ -336,18 +334,18 @@ export class Toon extends Character {
     this.GenerateBuffData(this._selfEnhance, true);
 
     // Process powers sequentially (C# uses Parallel.For)
-    for (let hIDX = 0; hIDX < this._mathPowers.length; hIDX++) {
-      if (this._mathPowers[hIDX] == null) {
-        continue;
+    await Promise.all(this._mathPowers.map(async (power, hIDX) => {
+      if (power == null) {
+        return;
       }
 
-      this.GBPA_Pass1_EnhancePreED(this._mathPowers[hIDX], hIDX);
-      Toon.GBPA_Pass2_ApplyED(this._mathPowers[hIDX]);
-      this.GBPA_Pass3_EnhancePostED(this._mathPowers[hIDX], hIDX);
-      Toon.GBPA_Pass4_Add(this._mathPowers[hIDX]);
-      this.GBPA_ApplyArchetypeCaps(this._mathPowers[hIDX]);
-      Toon.GBPA_Pass5_MultiplyPreBuff(this._mathPowers[hIDX], this._buffedPowers[hIDX]);
-    }
+      this.GBPA_Pass1_EnhancePreED(power, hIDX);
+      Toon.GBPA_Pass2_ApplyED(power);
+      this.GBPA_Pass3_EnhancePostED(power, hIDX);
+      Toon.GBPA_Pass4_Add(power);
+      this.GBPA_ApplyArchetypeCaps(power);
+      Toon.GBPA_Pass5_MultiplyPreBuff(power, this._buffedPowers[hIDX]);
+    }));
 
     this.GenerateBuffData(this._selfBuffs, false);
 
@@ -501,7 +499,7 @@ export class Toon extends Character {
         continue;
       }
 
-      this.GBPA_MultiplyVariable(this._mathPowers[hIDX]!, hIDX);
+      Toon.GBPA_MultiplyVariable(this._mathPowers[hIDX]!, powerEntry);
       this._buffedPowers[hIDX] = new Power(this._mathPowers[hIDX]!);
       this._buffedPowers[hIDX]?.SetMathMag();
     }
@@ -524,17 +522,17 @@ export class Toon extends Character {
       power2.Stacks = this.CurrentBuild.Powers[hIDX]!.VariableValue;
     }
     
-    power2 = this.GBPA_ApplyPowerOverride(power2);
-    this.GBPA_AddEnhFX(power2, hIDX);
+    power2 = Toon.GBPA_ApplyPowerOverride(power2);
+    Toon.GBPA_AddEnhFX(power2, this.CurrentBuild!.Powers[hIDX]);
     power2.AbsorbPetEffects(hIDX, stackingOverride);
     power2.ApplyGrantPowerEffects();
-    this.GBPA_AddSubPowerEffects(power2, hIDX);
+    Toon.GBPA_AddSubPowerEffects(power2, this.CurrentBuild!.Powers[hIDX]);
     power2.ApplyModifyEffects();
 
     return power2;
   }
 
-  private GBPA_ApplyPowerOverride(ret: IPower): IPower {
+  private static GBPA_ApplyPowerOverride(ret: IPower): IPower {
     if (!ret.HasPowerOverrideEffect) {
       return ret;
     }
@@ -554,13 +552,8 @@ export class Toon extends Character {
     return ret;
   }
 
-  private GBPA_AddEnhFX(iPower: IPower | null, iIndex: number): void {
-    if (!MidsContext.Config || !this.CurrentBuild || MidsContext.Config.I9.IgnoreEnhFX || iIndex < 0 || !iPower) {
-      return;
-    }
-
-    const currentPowerEntry = this.CurrentBuild.Powers[iIndex];
-    if (!currentPowerEntry?.Power) {
+  private static GBPA_AddEnhFX(iPower: IPower | null, currentPowerEntry: PowerEntry): void {
+    if (!MidsContext.Config || !currentPowerEntry || !currentPowerEntry.Power || MidsContext.Config.I9.IgnoreEnhFX || !iPower) {
       return;
     }
 
@@ -646,19 +639,13 @@ export class Toon extends Character {
     effectsList.push(clonedEffect);
   }
 
-  private GBPA_AddSubPowerEffects(ret: IPower, hIDX: number): boolean {
+  private static GBPA_AddSubPowerEffects(ret: IPower, powerEntry: PowerEntry): boolean {
     if (!ret.NIDSubPower || ret.NIDSubPower.length <= 0) {
       return false;
     }
     
-    let length = ret.Effects.length;
-    if (hIDX < 0 || !this.CurrentBuild) {
-      return false;
-    }
-    
+    let length = ret.Effects.length;    
     let effectCount = 0;
-    const powerEntry = this.CurrentBuild.Powers[hIDX];
-    if (!powerEntry) return false;
     
     for (let index = 0; index < powerEntry.SubPowers.length; index++) {
       const subPower = powerEntry.SubPowers[index];
@@ -705,17 +692,14 @@ export class Toon extends Character {
     }
   }
 
-  private GBPA_MultiplyVariable(iPower: IPower, hIDX: number): boolean {
-    if (!iPower || hIDX < 0 || !this.CurrentBuild) {
+  private static GBPA_MultiplyVariable(iPower: IPower, powerEntry: PowerEntry): boolean {
+    if (!iPower || !powerEntry) {
       return false;
     }
 
     if (!iPower.VariableEnabled) {
       return false;
     }
-
-    const powerEntry = this.CurrentBuild.Powers[hIDX];
-    if (!powerEntry) return false;
 
     for (const fx of iPower.Effects) {
       if (fx.VariableModified && !fx.IgnoreScaling) {
@@ -787,17 +771,19 @@ export class Toon extends Character {
           }
 
           let fxDuration = 0;
-          let flag6 = false; // IsEnumValue check
+          let flag6 = IsEnumValue(eEffectType[eEffectType2], eEnhance);
           let flag7 = false;
 
           // Check for special cases
-          if (powerMath.Effects[effIdx].EffectType === eEffectType.Enhancement && 
-              powerMath.Effects[effIdx].ETModifies === eEffectType.Accuracy) {
-            flag6 = true;
-            flag7 = true;
-          } else if (powerMath.Effects[effIdx].EffectType === eEffectType.ResEffect && 
-                     powerMath.Effects[effIdx].ETModifies === eEffectType.Defense) {
-            flag6 = true;
+          if (!flag6) {
+            if (powerMath.Effects[effIdx].EffectType === eEffectType.Enhancement &&
+                powerMath.Effects[effIdx].ETModifies === eEffectType.Accuracy) {
+              flag6 = true;
+              flag7 = true;
+            } else if (powerMath.Effects[effIdx].EffectType === eEffectType.ResEffect &&
+                       powerMath.Effects[effIdx].ETModifies === eEffectType.Defense) {
+              flag6 = true;
+            }
           }
 
           if (!flag6) {
@@ -805,13 +791,15 @@ export class Toon extends Character {
             if (!allowedFx) {
               continue;
             }
-            if (!this.CheckAllowedFromFx(allowedFx, powerMath.Effects[effIdx].EffectType, 
+            if (!this.CheckAllowedFromFx(allowedFx, powerMath.Effects[effIdx].EffectType,
                 powerMath.Effects[effIdx].MezType, powerMath.Effects[effIdx].ETModifies)) {
               continue;
             }
           }
 
-          const iEffect = !flag7 ? eEnhance.None : eEnhance.Accuracy; // Simplified - would need StringToFlaggedEnum
+          const iEffect = !flag7
+            ? StringToFlaggedEnum(eEffectType[eEffectType2], eEnhance) as eEnhance
+            : eEnhance.Accuracy;
           
           let fxMag = 0;
           if (eEffectType2 === eEffectType.Mez) {
@@ -872,16 +860,24 @@ export class Toon extends Character {
       for (let index2 = 0; index2 < Object.keys(eEffectType).length / 2; index2++) {
         const effectType = index2 as eEffectType;
         if (eff.EffectType !== effectType) continue;
-        
-        let iEnh = eEnhance.None; // Simplified - would need StringToFlaggedEnum
+
+        let isOk = IsEnumValue(eEffectType[effectType], eEnhance);
         let isSpecial = false;
-        
-        if (eff.EffectType === eEffectType.Enhancement && eff.ETModifies === eEffectType.Accuracy) {
-          isSpecial = true;
-          iEnh = eEnhance.Accuracy;
-        } else if (eff.EffectType === eEffectType.ResEffect && eff.ETModifies === eEffectType.Defense) {
-          iEnh = eEnhance.Defense;
+
+        if (!isOk) {
+          if (eff.EffectType === eEffectType.Enhancement && eff.ETModifies === eEffectType.Accuracy) {
+            isOk = true;
+            isSpecial = true;
+          } else if (eff.EffectType === eEffectType.ResEffect && eff.ETModifies === eEffectType.Defense) {
+            isOk = true;
+          }
         }
+
+        if (!isOk) continue;
+
+        const iEnh = !isSpecial
+          ? StringToFlaggedEnum(eEffectType[effectType], eEnhance) as eEnhance
+          : eEnhance.Accuracy;
 
         if (effectType === eEffectType.Mez) {
           eff.Math_Mag = Enhancement.ApplyED(Enhancement.GetSchedule(iEnh, eff.MezType), eff.Math_Mag);
@@ -909,7 +905,7 @@ export class Toon extends Character {
     const okAcc = basePower.IgnoreEnhancement(eEnhance.Accuracy);
     const okRecharge = basePower.IgnoreEnhancement(eEnhance.RechargeTime);
     const okEnd = basePower.IgnoreEnhancement(eEnhance.EnduranceDiscount);
-    
+
     // Apply self-enhancement buffs
     for (let index1 = 0; index1 < this._selfEnhance.Effect.length; index1++) {
       const effectType = index1 as eEffectType;
@@ -1296,33 +1292,6 @@ export class Toon extends Character {
     }
   }
 
-  private static HandleGrantPowerIncarnate(powerMath: IPower, effect1: IEffect, buffedPowers: (IPower | null)[], effIdx: number, at: Archetype | null, hIDX: number): void {
-    powerMath.AbsorbEffects(DatabaseAPI.Database.Power[effect1.nSummon], effect1.Duration, 0, at, 1, true, effIdx);
-    for (const fx of powerMath.Effects) {
-      fx.ToWho = eToWho.Target;
-      fx.Absorbed_Effect = true;
-      fx.isEnhancementEffect = effect1.isEnhancementEffect;
-      fx.BaseProbability *= effect1.BaseProbability;
-      fx.EffectiveProbability = fx.Probability * effect1.Probability;
-      fx.Ticks = effect1.Ticks;
-    }
-
-    if (hIDX <= -1) return;
-    
-    const buffedPower = buffedPowers[hIDX];
-    if (!buffedPower) return;
-    
-    const length2 = buffedPower.Effects.length;
-    buffedPower.AbsorbEffects(DatabaseAPI.Database.Power[effect1.nSummon], effect1.Duration, 0, at, 1, true, effIdx);
-    for (let index2 = length2; index2 < buffedPower.Effects.length; index2++) {
-      buffedPower.Effects[index2].ToWho = effect1.ToWho;
-      buffedPower.Effects[index2].Absorbed_Effect = true;
-      buffedPower.Effects[index2].isEnhancementEffect = effect1.isEnhancementEffect;
-      buffedPower.Effects[index2].EffectiveProbability = buffedPower.Effects[index2].Probability * effect1.Probability;
-      buffedPower.Effects[index2].Ticks = effect1.Ticks;
-    }
-  }
-
   private GBPA_ApplyIncarnateEnhancements(powerMath: IPower, hIDX: number, sourcePower: IPower | null, ignoreED: boolean, effectType: eEffectType): void {
     if (!powerMath || !sourcePower || sourcePower.Effects.length === 0 || !powerMath.Slottable) {
       return;
@@ -1364,7 +1333,7 @@ export class Toon extends Character {
         continue;
       }
 
-      if (effectType === eEffectType.Enhancement && 
+      if (effectType === eEffectType.Enhancement &&
           (effect1.EffectType === eEffectType.DamageBuff || effect1.EffectType === eEffectType.Enhancement)) {
         const incAcc = powerMath.IgnoreEnhancement(eEnhance.Accuracy);
         const incRech = powerMath.IgnoreEnhancement(eEnhance.RechargeTime);
@@ -1383,10 +1352,8 @@ export class Toon extends Character {
         } else {
           Toon.HandleDefaultIncarnateEnh(powerMath, effect1);
         }
-      } else if (effect1.EffectType === eEffectType.GrantPower) {
-        Toon.HandleGrantPowerIncarnate(powerMath, effect1, this._buffedPowers, effIdx, this.Archetype, hIDX);
       } else {
-        powerMath.AbsorbEffects(power1, effect1.Duration, 0, this.Archetype, 1, true, effIdx, effIdx);
+        powerMath.AbsorbEffects(sourcePower, effect1.Duration, 0, this.Archetype, 1, true, effIdx, effIdx);
         
         const lastEffect = powerMath.Effects[powerMath.Effects.length - 1];
         if (lastEffect) {
@@ -1397,7 +1364,7 @@ export class Toon extends Character {
         }
 
         if (hIDX > -1 && this._buffedPowers[hIDX]) {
-          this._buffedPowers[hIDX]!.AbsorbEffects(power1, effect1.Duration, 0, this.Archetype, 1, true, effIdx, effIdx);
+          this._buffedPowers[hIDX]!.AbsorbEffects(sourcePower, effect1.Duration, 0, this.Archetype, 1, true, effIdx, effIdx);
           
           const buffedLastEffect = this._buffedPowers[hIDX]!.Effects[this._buffedPowers[hIDX]!.Effects.length - 1];
           if (buffedLastEffect) {
@@ -1426,7 +1393,7 @@ export class Toon extends Character {
 
     // Pass 2: calc GCM flags scale (from source incarnate power only)
     for (const flag of gcmFlags) {
-      if (MidsContext.Character?.ModifyEffects?.has(flag)) {
+      if (this.ModifyEffects?.has(flag)) {
         continue;
       }
 
@@ -1434,7 +1401,7 @@ export class Toon extends Character {
         .filter(e => e.Reward === flag)
         .reduce((sum, e) => sum + e.Scale, 0);
 
-      MidsContext.Character?.ModifyEffects?.set(flag, scale);
+      this.ModifyEffects?.set(flag, scale);
     }
 
     // Pass 3: recalculate probabilities
@@ -1639,7 +1606,7 @@ export class Toon extends Character {
       fx.EffectType === eEffectType.DamageBuff || fx.EffectType === eEffectType.Enhancement;
 
     const IsGlobalAccuracySource = (src: IPower): boolean =>
-      src === MidsContext.Character?.CurrentBuild?.SetBonusVirtualPower ||
+      src === this.CurrentBuild?.SetBonusVirtualPower ||
       src.PowerType === ePowerType.GlobalBoost;
 
     const shortFx = new ShortFXImpl(); // main per-effect-type accumulator
@@ -1842,7 +1809,7 @@ export class Toon extends Character {
 
         // Normalize Absorb from % to flat HP when needed
         if (effIndex === eStatType.Absorb && fx.DisplayPercentage) {
-          value *= (MidsContext.Character?.Totals.HPMax ?? 0);
+          value *= (this.Totals.HPMax ?? 0);
         }
 
         nBuffs.Effect[effIndex] += value;
@@ -2041,9 +2008,9 @@ export class Toon extends Character {
         }
         this.RemoveGrantEffectIndirect(this._mathPowers, p, gFx.Summon);
         
-        if (!MidsContext.Character?.CurrentBuild?.Powers) continue;
+        if (!this.CurrentBuild?.Powers) continue;
 
-        const buildPowerPicked = MidsContext.Character.CurrentBuild.Powers.filter(pe => pe?.Power != null);
+        const buildPowerPicked = this.CurrentBuild.Powers.filter(pe => pe?.Power != null);
         const buildPowerIdx = buildPowerPicked.findIndex(pe => pe?.Power?.FullName === p.FullName);
         if (buildPowerIdx < 0) continue;
 
@@ -2189,7 +2156,7 @@ export class Toon extends Character {
     // From clipboard (old datachunk) - Note: Clipboard access is UI-specific
     else if (mStream) {
       // Note: Clipboard handling would need UI-specific implementation
-      console.warn("Clipboard loading not implemented - requires UI context");
+      showWarning("Clipboard loading not implemented - requires UI context");
       return false;
     } else {
       console.error("Cannot load build: no data to load from.");
@@ -2272,10 +2239,10 @@ export class Toon extends Character {
       // Try forum post format
       if (iString.indexOf("Primary") > -1 && iString.indexOf("Secondary") > -1) {
         // Note: clsUniversalImport.InterpretForumPost would be called here
-        console.warn("Forum post import not implemented");
+        showWarning("Forum post import not implemented");
         return false;
       } else {
-        console.warn("Unable to recognize data format.");
+        showWarning("Unable to recognize data format.");
         return false;
       }
     }
@@ -2316,7 +2283,7 @@ export class Toon extends Character {
         console.log("Build data imported!");
         return true;
       } else {
-        console.warn("Build data couldn't be imported.");
+        showWarning("Build data couldn't be imported.");
         return false;
       }
     } catch (error) {
@@ -2359,7 +2326,7 @@ export class Toon extends Character {
 
     // Compressed format - would need decompression
     // Note: Full implementation would decompress and then call ReadInternalDataUC
-    console.warn("Compressed format reading not fully implemented");
+    showWarning("Compressed format reading not fully implemented");
     return false;
   }
 
@@ -2381,9 +2348,9 @@ export class Toon extends Character {
 
     // Version check messages would be shown here
     if (nVer < Toon.BuildFormatChange2 && Math.abs(nVer - Toon.BuildFormatChange1) > 0.0001) {
-      console.warn("The data being loaded was saved by an older version, attempting conversion.");
+      showWarning("The data being loaded was saved by an older version, attempting conversion.");
     } else if (nVer > Toon.BuildFormatChange2) {
-      console.warn(`The data being loaded was saved by a newer version (File format v ${nVer.toFixed(4)}, expected ${Toon.BuildFormatChange2.toFixed(4)}).`);
+      showWarning(`The data being loaded was saved by a newer version (File format v ${nVer.toFixed(4)}, expected ${Toon.BuildFormatChange2.toFixed(4)}).`);
     }
 
     // Parse character data
@@ -2404,7 +2371,7 @@ export class Toon extends Character {
     // Note: This is a placeholder for old format import
     // Full implementation would parse old format data
     if (nVer < 1.0) {
-      console.warn("The data being loaded was saved by an older version and may not load correctly.");
+      showWarning("The data being loaded was saved by an older version and may not load correctly.");
     }
 
     // Note: Full implementation would parse old format
