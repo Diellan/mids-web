@@ -1,29 +1,33 @@
-import { GroupedFx } from "@/core/GroupedFx";
+import { useDomainStoreInstance } from "@/domainStore/domainStoreContext";
 import { useDomainStore } from "@/domainStore/useDomainStore";
 import { TabContext, TabList, TabPanel } from "@mui/lab";
 import { Box, Tab, Typography } from "@mui/material";
 import { useState, useMemo } from "react";
+import DataViewerInfo from "./info";
+import DataViewerEffects from "./effects";
+import DataViewerTotals from "./totals";
+import DataViewerEnhance from "./enhance";
 
 const DataViewer = () => {
   const highlightedPower = useDomainStore(store => store.getHighlightedPower());
-  const basePower = useDomainStore(store => store.getBasePower());
-  const enhancedPower = useDomainStore(store => store.getEnhancedPower());
-  const [value, setValue] = useState('info');
 
-  const groupedRankedEffects = useMemo(
-    () => GroupedFx.AssembleGroupedEffects(enhancedPower ?? basePower ?? null),
-    [enhancedPower, basePower]
-  );
-  
-  const rankedEffects = useMemo(
-    () => enhancedPower?.GetRankedEffects(true) ?? basePower?.GetRankedEffects(true) ?? [],
-    [enhancedPower, basePower]
-  );
-  
+  const [value, setValue] = useState('info');
+  const domainStore = useDomainStoreInstance();
+
   const effectsItemPairs = useMemo(
-    () => GroupedFx.GenerateListItems(groupedRankedEffects, basePower, enhancedPower ?? basePower, rankedEffects, 10),
-    [groupedRankedEffects, basePower, enhancedPower, rankedEffects]
+    () => domainStore.getPowerEffects(highlightedPower),
+    [highlightedPower, domainStore]
   );
+
+  if (!highlightedPower) {
+    return (
+      <Box sx={{ p: 2 }}>
+        <Typography variant="body2" color="text.secondary">
+          No power selected
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <TabContext value={value}>
@@ -36,52 +40,16 @@ const DataViewer = () => {
         </TabList>
       </Box>
       <TabPanel value="info">
-        <Typography variant="h6">{highlightedPower?.Power?.DisplayName}</Typography>
-        <Typography variant="body1">{highlightedPower?.Power?.DescShort}</Typography>
-        <Typography variant="body1">{highlightedPower?.Power?.DescLong}</Typography>
+        <DataViewerInfo power={highlightedPower} />
       </TabPanel>
       <TabPanel value="effects">
-        {effectsItemPairs.length > 0 ? (
-          <Box>
-            {effectsItemPairs.map((item, index) => (
-              <Box key={index} sx={{ mb: 1, p: 1, border: 1, borderColor: 'divider', borderRadius: 1 }}>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: item.value.UseUniqueColor
-                      ? 'primary.main'
-                      : item.value.UseAlternateColor
-                        ? 'secondary.main'
-                        : 'text.primary',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  {item.value.Name || 'Effect'}
-                </Typography>
-                <Typography variant="body2">{item.value.Value}</Typography>
-                {item.value.ToolTip && (
-                  <Typography variant="caption" color="text.secondary">
-                    {item.value.ToolTip}
-                  </Typography>
-                )}
-              </Box>
-            ))}
-          </Box>
-        ) : (
-          <Typography variant="body2" color="text.secondary">
-            No effects available
-          </Typography>
-        )}
+        <DataViewerEffects effectsItemPairs={effectsItemPairs} />
       </TabPanel>
       <TabPanel value="totals">
-        <Typography variant="body2" color="text.secondary">
-          Totals view coming soon
-        </Typography>
+        <DataViewerTotals />
       </TabPanel>
       <TabPanel value="enhance">
-        <Typography variant="body2" color="text.secondary">
-          Enhancements view coming soon
-        </Typography>
+        <DataViewerEnhance />
       </TabPanel>
     </TabContext>
   );

@@ -35,8 +35,8 @@ export class MidsCharacterFileFormat {
 
     private static readonly MagicCompressed = "MxDz";
     private static readonly MagicUncompressed = "MxDu";
-    private static readonly PriorVersion = 3.10;
-    private static readonly ThisVersion = 3.20;
+    private static readonly PriorVersion = Math.fround(3.10);
+    private static readonly ThisVersion = Math.fround(3.20);
     private static readonly DataLinkMaxLength = 2048;
     private static readonly UseQualifiedNames = false;
     private static readonly UseOldSubpowerFields = true;
@@ -332,8 +332,8 @@ export class MidsCharacterFileFormat {
                     }
 
                     if (magicFound) {
-                        // Create a new reader starting from the magic number position
-                        r = new BinaryReader(buffer.slice(streamIndex));
+                        // Create a new reader starting after the magic number
+                        r = new BinaryReader(buffer.slice(streamIndex + 4));
                         break;
                     }
 
@@ -432,7 +432,7 @@ export class MidsCharacterFileFormat {
                             }
 
                             if (sidPower1 > -1 || name1) {
-                                powerEntry1.Level = r.readInt();
+                                powerEntry1.Level = r.readSignedByte();
                                 switch (formatUsed) {
                                     case Formats.Current:
                                         powerEntry1.StatInclude = r.readBoolean();
@@ -452,7 +452,7 @@ export class MidsCharacterFileFormat {
                                 }
 
                                 if (hasSubPower) {
-                                    const subPowerCount = r.readInt() + 1;
+                                    const subPowerCount = r.readSignedByte() + 1;
                                     powerEntry1.SubPowers = new Array(subPowerCount).fill(null).map(() => new PowerSubEntry());
                                     
                                     for (let subPowerIndex = 0; subPowerIndex < powerEntry1.SubPowers.length; subPowerIndex++) {
@@ -492,7 +492,7 @@ export class MidsCharacterFileFormat {
                                 powerEntry1.Level = DatabaseAPI.Database.Levels_MainPowers[powerIndex];
                             }
 
-                            const slotCount = r.readInt() + 1;
+                            const slotCount = r.readSignedByte() + 1;
                             powerEntry1.Slots = new Array(slotCount).fill(null).map(() => {
                                 const slot = new SlotEntry();
                                 slot.Level = 0;
@@ -503,7 +503,7 @@ export class MidsCharacterFileFormat {
                             });
                             
                             for (let index3 = 0; index3 < powerEntry1.Slots.length; index3++) {
-                                powerEntry1.Slots[index3].Level = r.readInt();
+                                powerEntry1.Slots[index3].Level = r.readSignedByte();
                                 powerEntry1.Slots[index3].IsInherent = formatUsed === Formats.Current && r.readBoolean();
                                 this.ReadSlotData(r, powerEntry1.Slots[index3].Enhancement, qualifiedNames, fVersion);
                                 if (r.readBoolean()) {
@@ -720,17 +720,17 @@ export class MidsCharacterFileFormat {
         switch (enhancement?.TypeID) {
             case eType.Normal:
             case eType.SpecialO:
-                slot.RelativeLevel = reader.readInt() as eEnhRelative;
-                slot.Grade = reader.readInt() as eEnhGrade;
+                slot.RelativeLevel = reader.readSignedByte() as eEnhRelative;
+                slot.Grade = reader.readSignedByte() as eEnhGrade;
                 break;
             case eType.InventO:
             case eType.SetO:
-                slot.IOLevel = reader.readInt();
+                slot.IOLevel = reader.readSignedByte();
                 if (slot.IOLevel > 49) {
                     slot.IOLevel = 49;
                 }
                 if (fVersion > 1.0) {
-                    slot.RelativeLevel = reader.readInt() as eEnhRelative;
+                    slot.RelativeLevel = reader.readSignedByte() as eEnhRelative;
                 }
                 break;
             case eType.None:

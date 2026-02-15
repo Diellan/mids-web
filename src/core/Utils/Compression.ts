@@ -12,9 +12,9 @@ export interface CompressionResult {
 }
 
 export class Compression {
-    static async CompressToBase64(sourceBytes: Uint8Array): Promise<CompressionResult> {
+    static async CompressToBase64(sourceBytes: BufferSource): Promise<CompressionResult> {
         // Using CompressionStream API (browser native, supports Brotli)
-        const stream = new CompressionStream('br'); // 'br' = Brotli
+        const stream = new CompressionStream('gzip');
         const writer = stream.writable.getWriter();
         const reader = stream.readable.getReader();
 
@@ -44,7 +44,7 @@ export class Compression {
 
         return {
             OutString: base64String,
-            UncompressedSize: sourceBytes.length,
+            UncompressedSize: sourceBytes.byteLength,
             CompressedSize: compressedBytes.length,
             EncodedSize: base64String.length
         };
@@ -55,7 +55,7 @@ export class Compression {
         const compressedBytes = Uint8Array.from(atob(base64String), c => c.charCodeAt(0));
 
         // Using DecompressionStream API (browser native, supports Brotli)
-        const stream = new DecompressionStream('br'); // 'br' = Brotli
+        const stream = new DecompressionStream('gzip'); // 'br' = Brotli
         const writer = stream.writable.getWriter();
         const reader = stream.readable.getReader();
 

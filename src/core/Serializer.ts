@@ -1,10 +1,5 @@
 // Converted from C# Serializer.cs
 import type { ISerialize } from './ConfigData';
-import type { IDatabase } from './IDatabase';
-import type { IEnhancement } from './IEnhancement';
-import type { IPowerset } from './IPowerset';
-import type { IPower } from '../type/power';
-import type { IEffect } from '../type/effect';
 
 export class Serializer implements ISerialize {
   private readonly _serializeFunc: (o: any) => string;

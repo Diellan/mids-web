@@ -8,8 +8,10 @@ import { I9Slot } from './I9Slot';
 import { DatabaseAPI } from './DatabaseAPI';
 import { MidsContext } from './Base/Master_Classes/MidsContext';
 import { ServerData } from './ServerData';
+import { nanoid } from "nanoid";
 
 export class PowerEntry {
+  readonly id: string;
   Level: number = -1;
   NIDPowerset: number = -1;
   IDXPower: number = -1;
@@ -25,6 +27,7 @@ export class PowerEntry {
   readonly Chosen: boolean = false;
 
   constructor(power?: IPower, iLevel?: number, chosen?: boolean) {
+    this.id = nanoid();
     this.StatInclude = false;
     this.ProcInclude = false;
     this.InherentSlotsUsed = 0;

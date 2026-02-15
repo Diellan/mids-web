@@ -4,37 +4,47 @@ import MidsControls from './mids-controls';
 import PowerSelectors from './power-selectors';
 import PowersList from './powers-list';
 import DataViewer from './data-viewer';
-import { Grid, styled } from '@mui/material';
+import { Box, styled } from '@mui/material';
 
-const MainContainer = styled(Grid)(({ theme }) => ({
+const MainContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  gap: theme.spacing(2),
   padding: theme.spacing(2),
 }));
 
+const LeftPanel = styled(Box)(({ theme }) => ({
+  flex: '1 1 0',
+  minWidth: 180,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: theme.spacing(1),
+}));
+
+const RightPanel = styled(Box)({
+  flex: '2 1 0',
+  minWidth: 220,
+});
+
 export default function MidsBuilder() {
   return (
-    <MainContainer container spacing={2}>
-      <Grid size={5} container direction={'column'}>
-        <Grid size={12}>
-          <Title />
-        </Grid>
-        <Grid size={12} container direction={'row'}>
-          <Grid size={6}>
+    <MainContainer>
+      <LeftPanel>
+        <Title />
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          <Box sx={{ flex: '1 1 150px' }}>
             <CharacterSettings />
-          </Grid>
-          <Grid size={6}>
+          </Box>
+          <Box sx={{ flex: '1 1 150px' }}>
             <MidsControls />
-          </Grid>
-        </Grid>
-        <Grid size={12}>
-          <PowerSelectors>
-            <DataViewer />
-          </PowerSelectors>
-        </Grid>
-      </Grid>
-      <Grid size={7} container direction={'column'}>
-        <PowersList  />
-      </Grid>
+          </Box>
+        </Box>
+        <PowerSelectors>
+          <DataViewer />
+        </PowerSelectors>
+      </LeftPanel>
+      <RightPanel>
+        <PowersList />
+      </RightPanel>
     </MainContainer>
   );
 }
-

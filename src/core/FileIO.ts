@@ -16,7 +16,7 @@ export class FileIO {
     }
 
     // Note: Implementation would read line from stream
-    const str = ''; // iStream.ReadLine()
+    const str: string = ''; // iStream.ReadLine()
     if (!str) {
       return [];
     }

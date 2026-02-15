@@ -1,5 +1,5 @@
 // Converted from C# PetInfo.cs
-import type { IPower } from '../type/power';
+import { IPower } from './IPower';
 import type { SummonedEntity } from './SummonedEntity';
 
 export class PetPower {
@@ -69,12 +69,10 @@ export class PetInfo {
     return powerNames;
   }
 
-  ExecuteUpdate(): void {
-    this.GeneratePetPowerData();
-  }
-
-  ExecuteUpdate(outPowers: { powers: Set<string> }): void {
-    outPowers.powers = this.CompilePetPowers();
+  ExecuteUpdate(outPowers?: { powers: Set<string> }): void {
+    if (outPowers) {
+      outPowers.powers = this.CompilePetPowers();
+    }
     this.GeneratePetPowerData();
   }
 

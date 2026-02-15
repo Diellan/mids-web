@@ -12,7 +12,7 @@ body, html {
 }
 
 body {
-    background-image: url("http://appassets.mrb/assets/MRBLoading.gif");
+    background-image: url("/src/assets/MRBLoading.gif");
     background-repeat: no-repeat;
     background-size: auto 100%;
     background-position: center;

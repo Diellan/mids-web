@@ -71,7 +71,8 @@ export class TotalStatistics {
         this.Mez = iSt.Mez.slice();
         this.MezRes = iSt.MezRes.slice();
         this.DebuffRes = iSt.DebuffRes.slice();
-        this.Elusivity = iSt.Elusivity;
+        this.Elusivity = iSt.Elusivity.slice();
+        this.ElusivityMax = iSt.ElusivityMax;
         this.HPRegen = iSt.HPRegen;
         this.HPMax = iSt.HPMax;
         this.Absorb = iSt.Absorb;
@@ -79,8 +80,11 @@ export class TotalStatistics {
         this.EndUse = iSt.EndUse;
         this.EndMax = iSt.EndMax;
         this.RunSpd = iSt.RunSpd;
+        this.MaxRunSpd = iSt.MaxRunSpd;
         this.JumpSpd = iSt.JumpSpd;
+        this.MaxJumpSpd = iSt.MaxJumpSpd;
         this.FlySpd = iSt.FlySpd;
+        this.MaxFlySpd = iSt.MaxFlySpd;
         this.JumpHeight = iSt.JumpHeight;
         this.StealthPvE = iSt.StealthPvE;
         this.StealthPvP = iSt.StealthPvP;

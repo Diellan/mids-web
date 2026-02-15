@@ -1,7 +1,8 @@
 // Converted from C# CrypticReplTable.cs
-import fs from 'fs';
 import { AppDataPaths } from '../AppDataPaths';
 import { DatabaseAPI } from '../DatabaseAPI';
+import { fetchLocal } from '../fetchLocal';
+import { showWarning } from '../showWarning';
 
 export class CrypticReplTable {
   private _table: Map<string, string> = new Map();
@@ -18,14 +19,10 @@ export class CrypticReplTable {
     this._table = table;
   }
 
-  static async Initialize(): Promise<void> {
+  static async Initialize(path: string): Promise<void> {
     try {
-      const filename = AppDataPaths.CNamePowersRepl;
-      if (!filename) {
-        throw new Error('CNamePowersRepl path not configured');
-      }
-
-      const response = await fetch(filename);
+      const filename = AppDataPaths.SelectDataFileLoad(AppDataPaths.MxdbCrypticReplTable, path);
+      const response = await fetchLocal(filename);
       if (!response.ok) {
         throw new Error(`Failed to load CrypticReplTable file: ${filename}`);
       }
@@ -84,7 +81,7 @@ export class CrypticReplTable {
       const count = counters.get(key) || 0;
       if (count > 0) {
         itemsToRemove.push([key, value]);
-        console.warn(
+        showWarning(
           `Warning: duplicate input power ID ${key} found. The replacement pair <${key}, ${value}> will be disabled.`
         );
       } else {
@@ -97,7 +94,7 @@ export class CrypticReplTable {
       );
       if (!power || (power as any).StaticIndex === -1) {
         itemsToRemove.push([key, value]);
-        console.warn(
+        showWarning(
           `Warning: power ID ${key} can be converted to ID ${value} but the source power doesn't exist.`
         );
       }
@@ -108,7 +105,7 @@ export class CrypticReplTable {
       );
       if (!targetPower || (targetPower as any).StaticIndex === -1) {
         itemsToRemove.push([key, value]);
-        console.warn(
+        showWarning(
           `Warning: power ID ${key} can be converted to ID ${value} but the target power doesn't exist.`
         );
       }

@@ -24,6 +24,7 @@ import { ExportConfig } from './ExportConfig';
 import { ShareConfig } from './ShareConfig';
 import { RawSaveResult } from './Schema';
 import { BinaryReader, BinaryWriter } from 'csharp-binary-stream';
+import { showWarning } from './showWarning';
 
 // ISerialize interface (if not already defined in Serializer.ts)
 export interface ISerialize {
@@ -672,8 +673,8 @@ export class ConfigData {
 
       const header = reader.readString();
       if (header !== ConfigData.OverrideNames) {
-        console.warn(
-          `Overrides file (${AppDataPaths.MxdbFileOverrides}) was missing a header!\r\nNot loading powerset comparison overrides.`
+        showWarning(
+          `Overrides file (${AppDataPaths.MxdbFileOverrides}) was missing a header!\nNot loading powerset comparison overrides.`
         );
         return;
       }

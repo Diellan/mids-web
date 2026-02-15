@@ -5,6 +5,6 @@ export class OperationResult {
 }
 
 export class OperationResultT<T> extends OperationResult {
-    Data: T | null = null;
+    Data?: T;
 }
 

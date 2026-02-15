@@ -40,10 +40,7 @@ export class I9SetData {
 
     if (index >= 0) {
       this.SetInfo[index].SlottedCount++;
-      this.SetInfo[index].EnhIndexes = [
-        ...this.SetInfo[index].EnhIndexes,
-        iEnh.Enh
-      ];
+      this.SetInfo[index].EnhIndexes.push(iEnh.Enh);
     } else {
       this.SetInfo.push({
         SetIDX: nIdSet,
@@ -69,30 +66,42 @@ export class I9SetData {
   }
 
   BuildEffects(pvMode: ePvX): void {
-    for (let index1 = 0; index1 < this.SetInfo.length; index1++) {
-      if (this.SetInfo[index1].SlottedCount > 1) {
-        const enhancementSet = DatabaseAPI.Database.EnhancementSets[this.SetInfo[index1].SetIDX];
-        for (let index2 = 0; index2 < enhancementSet.Bonus.length; index2++) {
-          const bonus = enhancementSet.Bonus[index2];
-          if (
-            bonus.Slotted <= this.SetInfo[index1].SlottedCount &&
-            (bonus.PvMode === pvMode || bonus.PvMode === ePvX.Any)
-          ) {
-            for (let index3 = 0; index3 < bonus.Index.length; index3++) {
-              this.SetInfo[index1].Powers = [
-                ...this.SetInfo[index1].Powers,
-                bonus.Index[index3]
-              ];
-            }
+    for (const setInfo of this.SetInfo) {
+      if (setInfo.SlottedCount < 1) {
+        continue;
+      }
+
+      const enhancementSet = DatabaseAPI.Database.EnhancementSets[setInfo.SetIDX];
+
+      for (const bonus of enhancementSet.Bonus) {
+        if (
+          bonus.Slotted <= setInfo.SlottedCount &&
+          (bonus.PvMode === pvMode || bonus.PvMode === ePvX.Any)
+        ) {
+          for (const powerIndex of bonus.Index) {
+            setInfo.Powers.push(powerIndex);
           }
         }
       }
 
-      if (this.SetInfo[index1].SlottedCount <= 0) {
-        continue;
+      for (var index2 = 0;
+        index2 < DatabaseAPI.Database.EnhancementSets[setInfo.SetIDX].Enhancements.length;
+        index2++)
+      {
+        if (!DatabaseAPI.Database.EnhancementSets[setInfo.SetIDX].SpecialBonus[index2].Index.length)
+          continue;
+        for (var index3 = 0; index3 < setInfo.EnhIndexes.length; ++index3)
+        {
+          if (setInfo.EnhIndexes[index3] != DatabaseAPI.Database.EnhancementSets[setInfo.SetIDX].Enhancements[index2])
+              continue;
+          for (var index4 = 0;
+            index4 < DatabaseAPI.Database.EnhancementSets[setInfo.SetIDX].SpecialBonus[index2].Index.length;
+            ++index4)
+          {
+              setInfo.Powers.push(DatabaseAPI.Database.EnhancementSets[setInfo.SetIDX].SpecialBonus[index2].Index[index4]);
+          }
+        }
       }
-
-      // Note: Special bonus handling would go here
     }
   }
 }

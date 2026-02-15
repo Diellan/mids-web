@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm tsc:*)",
+      "Bash(pnpm vitest run:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm run pretest:*)",
+      "Bash(rg:*)",
+      "Bash(pnpm add:*)",
+      "Bash(git stash:*)",
+      "Bash(fd:*)",
+      "Bash(npx tsc:*)",
+      "Bash(findstr:*)",
+      "Bash(Select-String -Pattern \"BuildManager|DomainStore|App\\\\.tsx|main[/\\\\]index\")",
+      "Bash(dir:*)",
+      "Bash(npx vitest run:*)",
+      "Bash(pnpm run build:*)",
+      "Bash(node:*)"
+    ]
+  }
+}

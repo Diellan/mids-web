@@ -1,9 +1,9 @@
 {
-  "name": "electron-vite-react",
-  "version": "2.2.0",
+  "name": "mids-web",
+  "version": "0.1.0",
   "main": "dist-electron/main/index.js",
-  "description": "Electron Vite React boilerplate.",
-  "author": "草鞋没号 <308487730@qq.com>",
+  "description": "Electron implementation of Mids Hero Builder.",
+  "author": "diellan <diellan@gmail.com>",
   "license": "MIT",
   "private": true,
   "debug": {
@@ -12,12 +12,16 @@
     }
   },
   "type": "module",
+  "postinstall": "electron-builder install-app-deps",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build && electron-builder",
+    "build:debug": "cross-env DEBUG=true electron-builder --dir",
     "preview": "vite preview",
     "pretest": "vite build --mode=test",
-    "test": "vitest run"
+    "test": "vitest run",
+    "app:dir": "electron-builder --dir",
+    "app:dist": "electron-builder"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -28,23 +32,27 @@
     "@mui/material": "^7.3.6",
     "csharp-binary-stream": "^2.0.0",
     "electron-updater": "^6.3.9",
-    "pako": "^2.1.0"
+    "mathjs": "^15.1.0",
+    "nanoid": "^5.1.6",
+    "pako": "^2.1.0",
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@playwright/test": "^1.48.2",
     "@types/pako": "^2.0.4",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^4.3.3",
+    "@vitejs/plugin-react": "^5.1.2",
     "autoprefixer": "^10.4.20",
+    "cross-env": "^10.1.0",
     "electron": "^33.2.0",
-    "electron-builder": "^24.13.3",
+    "electron-builder": "^26.7.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "typescript": "^5.4.2",
-    "vite": "^5.4.11",
+    "vite": "^7.3.0",
     "vite-plugin-electron": "^0.29.0",
     "vite-plugin-electron-renderer": "^0.14.6",
-    "vitest": "^2.1.5"
+    "vitest": "^4.0.15"
   }
 }

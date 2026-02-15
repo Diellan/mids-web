@@ -1,6 +1,8 @@
 // Converted from C# PowersReplTable.cs
 import fs from 'fs';
 import { AppDataPaths } from './AppDataPaths';
+import { fetchLocal } from './fetchLocal';
+import { showWarning } from './showWarning';
 
 interface AlternateEntry {
   SourcePowerId: number;
@@ -77,7 +79,7 @@ export class PowersReplTable {
       if (PowersReplTable.EnableDebug) {
         console.log(`Loading PowersReplTable from ${filename}`);
       }
-      const response = await fetch(filename);
+      const response = await fetchLocal(filename);
       if (!response.ok) {
         throw new Error(`Failed to load PowersReplTable file: ${filename}`);
       }
@@ -133,7 +135,7 @@ export class PowersReplTable {
       if (count > 0) {
         itemsToRemove.push(item);
         if (PowersReplTable.EnableDebug) {
-          console.warn(
+          showWarning(
             `Duplicate source power ID ${item.SourcePowerId} found. Removing entry.`
           );
         }

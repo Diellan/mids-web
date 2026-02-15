@@ -1,5 +1,6 @@
 // Converted from C# Modifiers.cs
 import { BinaryReader, BinaryWriter } from 'csharp-binary-stream';
+import { fetchLocal } from './fetchLocal';
 
 export class ModifierTable {
   Table: number[][] = [];
@@ -88,7 +89,7 @@ export class Modifiers {
     
     try {
       // Try to load from JSON first
-      const jsonResponse = await fetch(path);
+      const jsonResponse = await fetchLocal(path);
       if (jsonResponse.ok) {
         const jsonText = await jsonResponse.text();
         const data = JSON.parse(jsonText);
@@ -119,7 +120,7 @@ export class Modifiers {
       path = AppDataPaths.SelectDataFileLoad(AppDataPaths.MxdbFileModifiers, iPath);
       
       try {
-        const response = await fetch(path);
+        const response = await fetchLocal(path);
         if (!response.ok) {
           return false;
         }

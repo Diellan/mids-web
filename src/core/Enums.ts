@@ -1,7 +1,6 @@
 // Converted from C# Enums.cs
 // This file contains all enum definitions, structs, and utility functions
 
-import type { IEffect } from './IEffect';
 
 // ============================================================================
 // ENUMS
@@ -1358,15 +1357,6 @@ export interface sTwinID {
   SubID: number;
 }
 
-export interface sEffect {
-  Mode: eEffMode;
-  BuffMode: eBuffDebuff;
-  Enhance: sTwinID;
-  Schedule: eSchedule;
-  Multiplier: number;
-  FX: IEffect | null;
-}
-
 export interface ShortFX {
   Index: number[] | null;
   Value: number[];
@@ -1654,9 +1644,84 @@ export function GetRelativeString(iRel: eEnhRelative, onlySign: boolean): string
   }
 }
 
-// Note: StringToFlaggedEnum, StringToEnumArray, IsEnumValue, StringToArray functions
-// would need to be implemented with proper TypeScript enum handling
-// These are complex and depend on runtime enum reflection which TypeScript doesn't have
+// Helper function to split comma-separated string into sorted array
+export function StringToArray(iStr: string | null | undefined): string[] {
+  if (iStr == null || iStr === '') {
+    return [];
+  }
+
+  const normalized = iStr.replace(/, /g, ',');
+  const array = normalized.split(',');
+  array.sort();
+
+  return array;
+}
+
+// Convert string to enum value(s), supporting both single values and flagged (bitwise) enums
+// For flagged enums, multiple values separated by commas or spaces are summed together
+export function StringToFlaggedEnum(
+  iStr: string,
+  enumObj: Record<string, number | string>,
+  noFlag: boolean = false
+): number {
+  let result = 0;
+  const upperStr = iStr.toUpperCase();
+
+  // Split by comma or space
+  const strArray = upperStr.includes(',')
+    ? StringToArray(upperStr)
+    : upperStr.split(' ');
+
+  if (strArray.length < 1) {
+    return result;
+  }
+
+  // Get enum names (filter out reverse mappings for numeric enums)
+  // TypeScript numeric enums have both string->number and number->string mappings
+  const enumNames = Object.keys(enumObj).filter(key => isNaN(Number(key)));
+  const upperNames = enumNames.map(name => name.toUpperCase());
+
+  for (const str of strArray) {
+    if (str.length === 0) {
+      continue;
+    }
+
+    const index = upperNames.indexOf(str);
+    if (index === -1) {
+      continue;
+    }
+
+    const enumName = enumNames[index];
+    const enumValue = enumObj[enumName] as number;
+
+    if (noFlag) {
+      return enumValue;
+    }
+
+    result += enumValue;
+  }
+
+  return result;
+}
+
+// Check if a string is a valid enum value name
+export function IsEnumValue(
+  iStr: string | null | undefined,
+  enumObj: Record<string, number | string>
+): boolean {
+  if (iStr == null) {
+    return false;
+  }
+
+  // Get enum names (filter out reverse mappings for numeric enums)
+  const enumNames = Object.keys(enumObj).filter(key => isNaN(Number(key)));
+  const upperStr = iStr.toUpperCase();
+  const upperNames = enumNames.map(name => name.toUpperCase());
+
+  return upperNames.indexOf(upperStr) > -1;
+}
+
+// Note: StringToEnumArray can be added if needed
 
 export function GetGroupedDamage(iDamage: boolean[], shortForm: boolean): string {
   const damageEnumLength = Object.keys(eDamage).length / 2 - 1;

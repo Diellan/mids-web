@@ -3,6 +3,7 @@
 // browser-compatible storage (e.g., localStorage, IndexedDB, or server-side API calls).
 
 import { MidsContext } from '../Base/Master_Classes/MidsContext';
+import { showWarning } from '../showWarning';
 
 interface Item {
     Invalid: string;
@@ -32,14 +33,14 @@ export class Replacer {
                 data = stored;
             }
         } catch (ex: any) {
-            console.warn('Failed to load replacer data:', ex);
+            showWarning(`Failed to load replacer data: ${ex}`);
         }
 
         if (data && data.trim() !== '') {
             try {
                 Replacer.Items = JSON.parse(data) as Item[];
             } catch (ex: any) {
-                console.warn('Failed to parse replacer data:', ex);
+                showWarning(`Failed to parse replacer data: ${ex}`);
                 Replacer.Items = [];
             }
         } else {
