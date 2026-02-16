@@ -4,7 +4,8 @@ import MidsControls from './mids-controls';
 import PowerSelectors from './power-selectors';
 import PowersList from './powers-list';
 import DataViewer from './data-viewer';
-import { Box, styled } from '@mui/material';
+import { Accordion, AccordionDetails, AccordionSummary, Box, Typography, styled } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 const MainContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
@@ -38,9 +39,15 @@ export default function MidsBuilder() {
             <MidsControls />
           </Box>
         </Box>
-        <PowerSelectors>
-          <DataViewer />
-        </PowerSelectors>
+        <Accordion defaultExpanded>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography>Powers</Typography>
+          </AccordionSummary>
+          <AccordionDetails sx={{ p: 0 }}>
+            <PowerSelectors />
+          </AccordionDetails>
+        </Accordion>
+        <DataViewer />
       </LeftPanel>
       <RightPanel>
         <PowersList />

@@ -9,8 +9,8 @@ const DataViewerTotals = () => {
     return `${(value * multiplier).toFixed(1)}${suffix}`;
   };
 
-  const damageTypes = Object.values(eDamage).filter(v => typeof v === 'number') as eDamage[];
-  const mezTypes = Object.values(eMez).filter(v => typeof v === 'number') as eMez[];
+  const damageTypes = Object.values(eDamage).filter(v => typeof v === 'number' && v > 0) as eDamage[];
+  const mezTypes = Object.values(eMez).filter(v => typeof v === 'number' && v > 0) as eMez[];
 
   return (
     <Box sx={{ p: 2 }}>

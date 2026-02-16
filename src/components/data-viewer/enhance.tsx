@@ -31,7 +31,7 @@ const DataViewerEnhance = () => {
       ) : (
         <Grid container spacing={1}>
           {enhancements.map((slot, index) => (
-            <Grid key={index}>
+            <Grid key={index} width={'100%'}>
               <Paper sx={{ p: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box>
@@ -40,7 +40,7 @@ const DataViewerEnhance = () => {
                     </Typography>
                     {slot.enhancement.Enh > -1 ? (
                       <Typography variant="body1">
-                        {domainStore.getEnhancement(slot.enhancement.Enh).Name}
+                        {domainStore.getEnhancement(slot.enhancement.Enh).LongName}
                       </Typography>
                     ) : (
                       <Typography variant="body2" color="text.secondary">
@@ -50,7 +50,7 @@ const DataViewerEnhance = () => {
                   </Box>
                   {slot.enhancement.Enh > -1 && (
                     <Chip
-                      label={`+${slot.enhancement.IOLevel + 1}`}
+                      label={`LVL ${slot.enhancement.IOLevel + 1}`}
                       size="small"
                       color="primary"
                     />
