@@ -40,9 +40,10 @@
   "devDependencies": {
     "@playwright/test": "^1.48.2",
     "@types/pako": "^2.0.4",
+    "@types/react": "^19.2.7",
     "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react": "^4.3.3",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.2",
     "autoprefixer": "^10.4.20",
     "cross-env": "^10.1.0",
     "electron": "^33.2.0",
@@ -50,9 +51,9 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "typescript": "^5.4.2",
-    "vite": "^5.4.11",
+    "vite": "^7.3.0",
     "vite-plugin-electron": "^0.29.0",
     "vite-plugin-electron-renderer": "^0.14.6",
-    "vitest": "^2.1.5"
+    "vitest": "^4.0.15"
   }
 }
