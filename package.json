@@ -41,7 +41,6 @@
     "@playwright/test": "^1.48.2",
     "@types/pako": "^2.0.4",
     "@types/react": "^19.2.7",
-    "@types/react": "^18.3.12",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.2",
     "autoprefixer": "^10.4.20",
